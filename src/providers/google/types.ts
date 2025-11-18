@@ -1,3 +1,5 @@
+import type { UserSession } from '../../core/session/types.js';
+
 export interface GoogleIdTokenPayload {
   aud: string;
   exp: number;
@@ -29,7 +31,5 @@ export interface GoogleProviderConfig {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
-  onAuthenticated(
-    userClaims: GoogleIdTokenPayload,
-  ): Promise<Record<string, unknown>>;
+  onAuthenticated(userClaims: GoogleIdTokenPayload): Promise<UserSession>;
 }

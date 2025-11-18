@@ -1,7 +1,10 @@
 import { scryptAsync } from '@noble/hashes/scrypt.js';
 import { timingSafeEqual } from 'node:crypto';
 import { ResultAsync } from 'neverthrow';
-import { VerifyPasswordError, InvalidPasswordHashFormatError } from './errors';
+import {
+  VerifyPasswordError,
+  InvalidPasswordHashFormatError,
+} from './errors.js';
 import { Buffer } from 'node:buffer';
 
 export function verifyPassword(

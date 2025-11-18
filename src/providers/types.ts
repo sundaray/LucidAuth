@@ -1,14 +1,14 @@
-import type { AuthError } from '../core/errors';
+import type { AuthError } from '../core/errors.js';
 import type {
   SignUpError,
   SignInError,
   AccountNotFoundError,
   InvalidCredentialsError,
   VerifyEmailError,
-} from './credential/errors';
+} from './credential/errors.js';
 import { Result, ResultAsync } from 'neverthrow';
-import type { OAuthStatePayload } from '../core/oauth/types';
-import type { User, CredentialProviderConfig } from './credential/types';
+import type { OAuthStatePayload } from '../core/oauth/types.js';
+import type { User, CredentialProviderConfig } from './credential/types.js';
 
 export type AuthProviderId = 'google' | 'credential';
 

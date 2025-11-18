@@ -2,9 +2,9 @@ import type {
   AuthProviderId,
   AnyAuthProvider,
   CredentialProvider,
-} from '../../providers/types';
+} from '../../providers/types.js';
 
-import { ProviderNotFoundError } from './errors';
+import { ProviderNotFoundError } from './errors.js';
 import { Result, ok, err } from 'neverthrow';
 
 export class ProviderRegistry {

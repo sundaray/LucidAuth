@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import type { UserSession } from '../core/session/types';
+import type { UserSession } from '../core/session/types.js';
 
-import { MissingUserSessionProviderError } from './errors';
+import { MissingUserSessionProviderError } from './errors.js';
 
 type SessionContextState =
   | { status: 'pending'; session: null; error: null }

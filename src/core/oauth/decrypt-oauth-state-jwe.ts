@@ -1,7 +1,7 @@
 import { jwtDecrypt } from 'jose';
 import { ResultAsync } from 'neverthrow';
-import { DecryptOAuthStateJweError } from './errors';
-import type { OAuthStatePayload } from './index';
+import { DecryptOAuthStateJweError } from './errors.js';
+import type { OAuthStatePayload } from './index.js';
 import { Buffer } from 'node:buffer';
 
 export interface DecryptOAuthStateJWEParams {

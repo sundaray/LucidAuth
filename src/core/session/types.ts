@@ -1,10 +1,10 @@
 import { omit } from 'zod/mini';
-import type { AuthProviderId } from '../../providers/types';
+import type { AuthProviderId } from '../../providers/types.js';
 import {
   GetSessionError,
   SaveSessionError,
   DeleteSessionError,
-} from './errors';
+} from './errors.js';
 
 import { ResultAsync } from 'neverthrow';
 

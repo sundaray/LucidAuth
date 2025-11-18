@@ -1,20 +1,20 @@
 import { Result, ok, err, ResultAsync, safeTry } from 'neverthrow';
-import type { OAuthProvider } from '../../providers/types';
-import type { GoogleIdTokenPayload, GoogleProviderConfig } from './types';
-import type { OAuthStatePayload } from '../../core/oauth/types';
+import type { OAuthProvider } from '../../providers/types.js';
+import type { GoogleIdTokenPayload, GoogleProviderConfig } from './types.js';
+import type { OAuthStatePayload } from '../../core/oauth/types.js';
 
-import { decodeGoogleIdToken } from './decode-google-id-token';
-import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens';
+import { decodeGoogleIdToken } from './decode-google-id-token.js';
+import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens.js';
 
 import {
   MissingAuthorizationCodeError,
   MissingStateError,
   StateMismatchError,
-} from '../../core/oauth/errors';
+} from '../../core/oauth/errors.js';
 
-import { GoogleCompleteSignInError } from './errors';
+import { GoogleCompleteSignInError } from './errors.js';
 
-import { AuthError } from '../../core/errors';
+import { AuthError } from '../../core/errors.js';
 
 // --------------------------------------------
 //

@@ -1,7 +1,7 @@
 import { jwtVerify } from 'jose';
 import { ResultAsync } from 'neverthrow';
 import { Buffer } from 'node:buffer';
-import { VerifyEmailVerificationTokenError } from './errors';
+import { VerifyEmailVerificationTokenError } from './errors.js';
 
 interface EmailVerificationPayload {
   email: string;

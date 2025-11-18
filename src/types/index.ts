@@ -1,6 +1,4 @@
-import type { AnyAuthProvider } from '../providers/types';
-
-export type AuthProviderId = 'google' | 'credential';
+import type { AnyAuthProvider } from '../providers/types.js';
 
 export interface SignInOptions {
   redirectTo?: `/${string}`;

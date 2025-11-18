@@ -1,8 +1,8 @@
 import { scryptAsync } from '@noble/hashes/scrypt.js';
 import { randomBytes } from '@noble/hashes/utils.js';
 import { ResultAsync } from 'neverthrow';
-import { HashPasswordError } from './errors';
-import type { PasswordHash } from './types';
+import { HashPasswordError } from './errors.js';
+import type { PasswordHash } from './types.js';
 
 /**
  * Scrypt parameters for password hashing.

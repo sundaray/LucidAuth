@@ -1,9 +1,9 @@
 import { SignJWT } from 'jose';
 import { Buffer } from 'node:buffer';
 import { ResultAsync } from 'neverthrow';
-import type { EmailVerificationToken } from './types';
-import { EMAIL_VERIFICATION_TOKEN_EXPIRES_IN } from '../constants';
-import { GenerateEmailVerificationTokenError } from './errors';
+import type { EmailVerificationToken } from './types.js';
+import { EMAIL_VERIFICATION_TOKEN_EXPIRES_IN } from '../constants.js';
+import { GenerateEmailVerificationTokenError } from './errors.js';
 
 export function generateEmailVerificationToken(params: {
   email: string;

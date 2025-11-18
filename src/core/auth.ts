@@ -1,22 +1,22 @@
-import type { AuthConfig } from '../types';
-import type { SessionStorage, UserSessionPayload } from './session/types';
-import type { AnyAuthProvider, AuthProviderId } from '../providers/types';
+import type { AuthConfig } from '../types/index.js';
+import type { SessionStorage, UserSessionPayload } from './session/types.js';
+import type { AnyAuthProvider, AuthProviderId } from '../providers/types.js';
 import { ok, ResultAsync, errAsync, safeTry } from 'neverthrow';
 
-import { OAuthService } from './services/oauth-service';
-import { CredentialService } from './services/credential-service';
-import { SessionService } from './services/session-service';
-import { ProviderRegistry } from './services/provider-registry';
+import { OAuthService } from './services/oauth-service.js';
+import { CredentialService } from './services/credential-service.js';
+import { SessionService } from './services/session-service.js';
+import { ProviderRegistry } from './services/provider-registry.js';
 
-import { ProviderNotFoundError } from './oauth/errors';
+import { ProviderNotFoundError } from './oauth/errors.js';
 import {
   SignOutError,
   HandleVerifyEmailError,
   HandleOAuthCallbackError,
   SignUpError,
   SignInError,
-} from './errors';
-import { GetUserSessionError } from './session/errors';
+} from './errors.js';
+import { GetUserSessionError } from './session/errors.js';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,

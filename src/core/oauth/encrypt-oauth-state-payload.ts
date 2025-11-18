@@ -1,9 +1,9 @@
 import { EncryptJWT } from 'jose';
 import { ResultAsync } from 'neverthrow';
-import { EncryptOAuthStatePayloadError } from './errors';
-import type { OAuthStatePayload } from './types';
+import { EncryptOAuthStatePayloadError } from './errors.js';
+import type { OAuthStatePayload } from './types.js';
 import { Buffer } from 'node:buffer';
-import type { OAuthStateJWE } from './types';
+import type { OAuthStateJWE } from './types.js';
 
 export interface EncryptOAuthStatePayloadParams {
   oauthState: OAuthStatePayload;

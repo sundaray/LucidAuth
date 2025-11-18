@@ -1,17 +1,17 @@
-import type { AuthConfig } from '../../types';
-import type { SessionStorage, UserSessionPayload } from '../session/types';
+import type { AuthConfig } from '../../types/index.js';
+import type { SessionStorage, UserSessionPayload } from '../session/types.js';
 import {
   encryptUserSessionPayload,
   decryptUserSession,
   createUserSessionPayload,
-} from '../session';
-import type { AuthProviderId } from '../../providers/types';
+} from '../session/index.js';
+import type { AuthProviderId } from '../../providers/types.js';
 import { ResultAsync, okAsync } from 'neverthrow';
 import {
   CreateSessionError,
   GetSessionError,
   DeleteSessionError,
-} from '../session/errors';
+} from '../session/errors.js';
 
 export class SessionService<TContext> {
   constructor(

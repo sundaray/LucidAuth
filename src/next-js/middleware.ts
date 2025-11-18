@@ -1,8 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { decryptUserSession, encryptUserSessionPayload } from '../core/session';
-import type { AuthConfig } from '../types';
-import { COOKIE_NAMES } from '../core/constants';
+import {
+  decryptUserSession,
+  encryptUserSessionPayload,
+} from '../core/session/index.js';
+import type { AuthConfig } from '../types/index.js';
+import { COOKIE_NAMES } from '../core/constants.js';
 
 export async function extendUserSessionExpiry(
   userSessionJWE: string,

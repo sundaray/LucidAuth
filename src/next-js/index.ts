@@ -1,14 +1,14 @@
-import { createAuthHelpers } from '../core/auth';
-import { NextJsSessionStorage } from './session-storage';
-import { createExtendUserSessionMiddleware } from './middleware';
-import type { AuthConfig } from '../types';
-import { lazyInit } from '../core/utils/lazy-init';
-import { redirect as nextRedirect } from 'next/navigation';
-import { COOKIE_NAMES, OAUTH_STATE_MAX_AGE } from '../core/constants';
+import { createAuthHelpers } from '../core/auth.js';
+import { NextJsSessionStorage } from './session-storage.js';
+import { createExtendUserSessionMiddleware } from './middleware.js';
+import type { AuthConfig } from '../types/index.js';
+import { lazyInit } from '../core/utils/lazy-init.js';
+import { redirect as nextRedirect } from 'next/navigation.js';
+import { COOKIE_NAMES, OAUTH_STATE_MAX_AGE } from '../core/constants.js';
 import type { ResultAsync } from 'neverthrow';
-import type { AuthError } from '../core/errors';
-import type { UserSessionPayload } from '../core/session';
-import type { AuthProviderId } from '../providers/types';
+import type { AuthError } from '../core/errors.js';
+import type { UserSessionPayload } from '../core/session/types.js';
+import type { AuthProviderId } from '../providers/types.js';
 
 async function unwrap<T>(resultAsync: ResultAsync<T, AuthError>): Promise<T> {
   const result = await resultAsync;

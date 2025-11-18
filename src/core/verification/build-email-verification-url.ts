@@ -1,5 +1,5 @@
 import { Result } from 'neverthrow';
-import { BuildEmailVerificationUrlError } from './errors';
+import { BuildEmailVerificationUrlError } from './errors.js';
 
 export function buildEmailVerificationUrl(
   baseUrl: string,

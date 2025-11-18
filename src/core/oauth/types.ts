@@ -1,4 +1,4 @@
-import type { AuthProviderId } from '../../providers/types';
+import type { AuthProviderId } from '../../providers/types.js';
 
 export type OAuthStateJWE = string & { __brand: OAuthStateJWE };
 

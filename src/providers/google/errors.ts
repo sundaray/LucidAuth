@@ -1,4 +1,4 @@
-import { AuthError } from '../../core/errors';
+import { AuthError } from '../../core/errors.js';
 
 export class EncodeClientCredentialsError extends AuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {

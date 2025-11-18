@@ -1,11 +1,11 @@
-import type { AuthConfig } from '../../types';
-import type { CredentialProvider } from '../../providers/types';
+import type { AuthConfig } from '../../types/index.js';
+import type { CredentialProvider } from '../../providers/types.js';
 import { Result, ResultAsync } from 'neverthrow';
 import {
   SignUpError,
   SignInError,
   VerifyEmailError,
-} from '../../providers/credential/errors';
+} from '../../providers/credential/errors.js';
 
 export class CredentialService {
   constructor(private config: AuthConfig) {}

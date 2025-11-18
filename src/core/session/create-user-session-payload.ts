@@ -1,7 +1,7 @@
 import { ResultAsync, okAsync } from 'neverthrow';
-import type { AuthConfig } from '../../types';
-import type { AuthProviderId } from '../../providers/types';
-import type { UserSessionPayload } from './index';
+import type { AuthConfig } from '../../types/index.js';
+import type { AuthProviderId } from '../../providers/types.js';
+import type { UserSessionPayload } from './index.js';
 
 interface CreateUserSessionPayloadParams {
   authConfig: AuthConfig;

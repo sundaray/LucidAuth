@@ -1,19 +1,19 @@
 import { ok, err, ResultAsync, safeTry } from 'neverthrow';
-import type { CredentialProvider as CredentialProviderType } from '../types';
-import { hashPassword } from '../../core/password/hash';
-import { verifyPassword } from '../../core/password/verify';
-import { generateEmailVerificationToken } from '../../core/verification/generate-email-verification-token';
-import { verifyEmailVerificationToken } from '../../core/verification/verify-email-verification-token';
-import { buildEmailVerificationUrl } from '../../core/verification/build-email-verification-url';
+import type { CredentialProvider as CredentialProviderType } from '../types.js';
+import { hashPassword } from '../../core/password/hash.js';
+import { verifyPassword } from '../../core/password/verify.js';
+import { generateEmailVerificationToken } from '../../core/verification/generate-email-verification-token.js';
+import { verifyEmailVerificationToken } from '../../core/verification/verify-email-verification-token.js';
+import { buildEmailVerificationUrl } from '../../core/verification/build-email-verification-url.js';
 import {
   SignUpError,
   SignInError,
   AccountNotFoundError,
   InvalidCredentialsError,
   VerifyEmailError,
-} from './errors';
+} from './errors.js';
 
-import type { User, CredentialProviderConfig } from './types';
+import type { User, CredentialProviderConfig } from './types.js';
 
 export class CredentialProvider implements CredentialProviderType {
   id = 'credential' as const;
