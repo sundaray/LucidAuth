@@ -7,9 +7,7 @@ import {
 
 import { ResultAsync } from 'neverthrow';
 
-export interface UserSessionPayload {
-  maxAge: number;
-  provider: AuthProviderId;
+export interface UserSession {
   email?: string;
   name?: string;
   image?: string;
@@ -17,7 +15,10 @@ export interface UserSessionPayload {
   [key: string]: unknown;
 }
 
-export type UserSession = Omit<UserSessionPayload, 'maxAge' | 'provider'>;
+export interface UserSessionPayload extends UserSession {
+  maxAge: number;
+  provider: AuthProviderId;
+}
 
 export interface SessionStorage<TContext> {
   getSession(context: TContext): ResultAsync<string | null, GetSessionError>;
