@@ -15,6 +15,7 @@ import {
 import { GoogleCompleteSignInError } from './errors.js';
 
 import { AuthError } from '../../core/errors.js';
+import { CreateAuthorizationUrlError } from '../../core/oauth/errors.js';
 
 // --------------------------------------------
 //
@@ -40,18 +41,23 @@ export class GoogleProvider implements OAuthProvider {
     prompt?: string;
   }): Result<string, AuthError> {
     const { state, codeChallenge, prompt } = params;
-    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    return Result.fromThrowable(
+      () => {
+        const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
 
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('client_id', this.config.clientId);
-    url.searchParams.set('redirect_uri', this.config.redirectUri);
-    url.searchParams.set('state', state);
-    url.searchParams.set('code_challenge', codeChallenge);
-    url.searchParams.set('code_challenge_method', 'S256');
-    url.searchParams.set('scope', 'openid email profile');
-    url.searchParams.set('prompt', prompt || 'select_account');
+        url.searchParams.set('response_type', 'code');
+        url.searchParams.set('client_id', this.config.clientId);
+        url.searchParams.set('redirect_uri', this.config.redirectUri);
+        url.searchParams.set('state', state);
+        url.searchParams.set('code_challenge', codeChallenge);
+        url.searchParams.set('code_challenge_method', 'S256');
+        url.searchParams.set('scope', 'openid email profile');
+        url.searchParams.set('prompt', prompt || 'select_account');
 
-    return ok(url.toString());
+        return url.toString();
+      },
+      (error) => new CreateAuthorizationUrlError({ cause: error }),
+    )();
   }
 
   // --------------------------------------------

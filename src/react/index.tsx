@@ -6,7 +6,7 @@ import type { UserSession } from '../core/session/types.js';
 import { MissingUserSessionProviderError } from './errors.js';
 
 type SessionContextState =
-  | { status: 'pending'; session: null; error: null }
+  | { status: 'loading'; session: null; error: null }
   | { status: 'success'; session: UserSession | null; error: null }
   | { status: 'error'; session: null; error: Error };
 
@@ -21,7 +21,7 @@ export function UserSessionProvider({
   children: React.ReactNode;
   session: UserSession | null;
 }) {
-  const [state, setState] = useState<SessionContextState>(() => ({
+  const [state] = useState<SessionContextState>(() => ({
     status: 'success',
     session: session,
     error: null,
@@ -41,5 +41,14 @@ export function useUserSession() {
     throw new MissingUserSessionProviderError();
   }
 
-  return context;
+  const { status, session, error } = context;
+
+  return {
+    status,
+    error,
+    session,
+    isLoading: status === 'loading',
+    isError: status === 'error',
+    isAuthenticated: status === 'success' && session !== null,
+  };
 }

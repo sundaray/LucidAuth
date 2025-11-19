@@ -86,7 +86,15 @@ export function initAuth(config: AuthConfig) {
       // Wrap auth helpers for Next.js
       const authInstance: AuthInstance = {
         signIn: async (providerId, options) => {
-          return unwrap(authHelpers.signIn(providerId, undefined, options));
+          const result = await unwrap(
+            authHelpers.signIn(providerId, undefined, options),
+          );
+
+          if ('authorizationUrl' in result) {
+            nextRedirect(result.authorizationUrl as string);
+          }
+
+          return result;
         },
 
         signUp: async (data) => {

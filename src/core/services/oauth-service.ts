@@ -14,6 +14,7 @@ import { OAUTH_STATE_MAX_AGE } from '../constants.js';
 import type { SignInOptions } from '../../types/index.js';
 import { ResultAsync, safeTry, ok, err } from 'neverthrow';
 import { InitiateSignInError, CompleteSignInError } from './errors.js';
+import { AuthError } from '../errors.js';
 
 export class OAuthService<TContext> {
   constructor(
@@ -61,6 +62,10 @@ export class OAuthService<TContext> {
         oauthStateJWE,
       });
     }).mapErr((error) => {
+      if (error instanceof AuthError) {
+        return error;
+      }
+
       return new InitiateSignInError({
         message: `Failed to initiate OAuth sign-in.)`,
         cause: error,

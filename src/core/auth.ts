@@ -17,6 +17,7 @@ import {
   SignInError,
 } from './errors.js';
 import { GetUserSessionError } from './session/errors.js';
+import { AuthError } from './errors.js';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,
@@ -64,18 +65,21 @@ export function createAuthHelpers<TContext>(
               .saveSession(context, oauthStateJWE)
               .map(() => ({ authorizationUrl }));
           })
-          .mapErr(
-            (error) =>
-              new SignInError({
-                message: 'OAuth sign in failed.',
-                cause: error,
-              }),
-          );
+          .mapErr((error) => {
+            if (error instanceof AuthError) {
+              return error;
+            }
+
+            return new SignInError({
+              message: 'OAuth sign in failed.',
+              cause: error,
+            });
+          });
       }
 
-      // ----------------
+      // -------------------
       // Credential Sign In
-      // ----------------
+      // -------------------
       if (provider.type === 'credential') {
         const data = options as { email: string; password: string };
 
@@ -190,6 +194,8 @@ export function createAuthHelpers<TContext>(
           context,
           provider,
         );
+
+        console.log('User claims received from Google: ', sessionData);
 
         // Create session
         const session = yield* sessionService.createSession(

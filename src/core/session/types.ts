@@ -1,4 +1,3 @@
-import { omit } from 'zod/mini';
 import type { AuthProviderId } from '../../providers/types.js';
 import {
   GetSessionError,
@@ -11,6 +10,10 @@ import { ResultAsync } from 'neverthrow';
 export interface UserSessionPayload {
   maxAge: number;
   provider: AuthProviderId;
+  email?: string;
+  name?: string;
+  image?: string;
+  role?: string;
   [key: string]: unknown;
 }
 
