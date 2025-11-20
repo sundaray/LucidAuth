@@ -1,4 +1,4 @@
-import { AuthError } from '../errors.js';
+import { AuthError } from '../errors';
 
 export class HashPasswordError extends AuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
