@@ -9,7 +9,7 @@ import {
 } from '../../core/verification';
 import { AccountNotFoundError, InvalidCredentialsError } from './errors';
 
-import { AuthError, UnknownError, CallbackError } from '../../core/errors';
+import { SuperAuthError, UnknownError, CallbackError } from '../../core/errors';
 
 import type { User, CredentialProviderConfig } from './types';
 
@@ -30,7 +30,7 @@ export class CredentialProvider implements CredentialProviderType {
     },
     secret: string,
     baseUrl: string,
-  ): ResultAsync<User, AuthError> {
+  ): ResultAsync<User, SuperAuthError> {
     const config = this.config;
 
     return safeTry(async function* () {
@@ -81,7 +81,7 @@ export class CredentialProvider implements CredentialProviderType {
 
       return ok(user);
     }).mapErr((error) => {
-      if (error instanceof AuthError) {
+      if (error instanceof SuperAuthError) {
         return error;
       }
       return new UnknownError({
@@ -94,7 +94,7 @@ export class CredentialProvider implements CredentialProviderType {
   signIn(data: {
     email: string;
     password: string;
-  }): ResultAsync<User, AuthError> {
+  }): ResultAsync<User, SuperAuthError> {
     const config = this.config;
     return safeTry(async function* () {
       const { email, password } = data;
@@ -126,7 +126,7 @@ export class CredentialProvider implements CredentialProviderType {
 
       return ok(user);
     }).mapErr((error) => {
-      if (error instanceof AuthError) {
+      if (error instanceof SuperAuthError) {
         return error;
       }
       return new UnknownError({
@@ -139,7 +139,7 @@ export class CredentialProvider implements CredentialProviderType {
   verifyEmail(
     token: string,
     secret: string,
-  ): ResultAsync<{ email: string }, AuthError> {
+  ): ResultAsync<{ email: string }, SuperAuthError> {
     const config = this.config;
     return safeTry(async function* () {
       const email = yield* verifyEmailVerificationToken(token, secret);
@@ -154,7 +154,7 @@ export class CredentialProvider implements CredentialProviderType {
       );
       return ok({ email });
     }).mapErr((error) => {
-      if (error instanceof AuthError) {
+      if (error instanceof SuperAuthError) {
         return error;
       }
       return new UnknownError({

@@ -13,7 +13,7 @@ import {
 import { OAUTH_STATE_MAX_AGE } from '../constants.js';
 import type { SignInOptions } from '../../types/index.js';
 import { ResultAsync, safeTry, ok, err } from 'neverthrow';
-import { AuthError, UnknownError } from '../errors.js';
+import { SuperAuthError, UnknownError } from '../errors.js';
 import { OAuthStateCookieNotFoundError } from '../oauth/errors.js';
 
 export class OAuthService<TContext> {
@@ -30,7 +30,7 @@ export class OAuthService<TContext> {
     options?: SignInOptions,
   ): ResultAsync<
     { authorizationUrl: string; oauthStateJWE: string },
-    AuthError
+    SuperAuthError
   > {
     const config = this.config;
 
@@ -62,7 +62,7 @@ export class OAuthService<TContext> {
         oauthStateJWE,
       });
     }).mapErr((error) => {
-      if (error instanceof AuthError) {
+      if (error instanceof SuperAuthError) {
         return error;
       }
       return new UnknownError({
@@ -84,7 +84,7 @@ export class OAuthService<TContext> {
       sessionData: Record<string, unknown>;
       redirectTo: `/${string}`;
     },
-    AuthError
+    SuperAuthError
   > {
     const config = this.config;
     const oauthStateStorage = this.oauthStateStorage;
@@ -114,7 +114,7 @@ export class OAuthService<TContext> {
         redirectTo: oauthState.redirectTo || '/',
       });
     }).mapErr((error) => {
-      if (error instanceof AuthError) {
+      if (error instanceof SuperAuthError) {
         return error;
       }
       return new UnknownError({

@@ -1,7 +1,7 @@
 import type { AuthConfig } from '../../types';
 import type { CredentialProvider } from '../../providers/types';
 import { Result, ResultAsync } from 'neverthrow';
-import { AuthError, UnknownError } from '../errors';
+import { SuperAuthError, UnknownError } from '../errors';
 
 export class CredentialService {
   constructor(private config: AuthConfig) {}
@@ -12,7 +12,7 @@ export class CredentialService {
   signUp(
     provider: CredentialProvider,
     data: { email: string; password: string; [key: string]: unknown },
-  ): ResultAsync<{ success: boolean }, AuthError> {
+  ): ResultAsync<{ success: boolean }, SuperAuthError> {
     const config = this.config;
     return provider
       .signUp(data, config.session.secret, config.baseUrl)
@@ -20,7 +20,7 @@ export class CredentialService {
         return { success: true };
       })
       .mapErr((error) => {
-        if (error instanceof AuthError) {
+        if (error instanceof SuperAuthError) {
           return error;
         }
         return new UnknownError({
@@ -37,7 +37,7 @@ export class CredentialService {
     data: { email: string; password: string },
   ): ResultAsync<
     { sessionData: Record<string, unknown>; redirectTo: `/${string}` },
-    AuthError
+    SuperAuthError
   > {
     return provider
       .signIn(data)
@@ -49,7 +49,7 @@ export class CredentialService {
         };
       })
       .mapErr((error) => {
-        if (error instanceof AuthError) {
+        if (error instanceof SuperAuthError) {
           return error;
         }
         return new UnknownError({
@@ -64,7 +64,10 @@ export class CredentialService {
   verifyEmail(
     request: Request,
     provider: CredentialProvider,
-  ): ResultAsync<{ success: boolean; redirectTo: `/${string}` }, AuthError> {
+  ): ResultAsync<
+    { success: boolean; redirectTo: `/${string}` },
+    SuperAuthError
+  > {
     const config = this.config;
     const errorUrl = provider.config.emailVerification.onError;
     const successUrl = provider.config.emailVerification.onSuccess;
@@ -103,7 +106,7 @@ export class CredentialService {
         return { success: true, redirectTo: successUrl };
       })(),
       (error) => {
-        if (error instanceof AuthError) {
+        if (error instanceof SuperAuthError) {
           return error;
         }
         return new UnknownError({

@@ -1,6 +1,6 @@
-import { AuthError } from '../../core/errors.js';
+import { SuperAuthError } from '../../core/errors.js';
 
-export class AccountNotFoundError extends AuthError {
+export class AccountNotFoundError extends SuperAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message:
@@ -11,7 +11,7 @@ export class AccountNotFoundError extends AuthError {
   }
 }
 
-export class InvalidCredentialsError extends AuthError {
+export class InvalidCredentialsError extends SuperAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Invalid email or password.',

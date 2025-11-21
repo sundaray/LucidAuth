@@ -7,7 +7,7 @@ import {
 } from '../session';
 import type { AuthProviderId } from '../../providers/types';
 import { ResultAsync, okAsync } from 'neverthrow';
-import { AuthError, UnknownError } from '../errors';
+import { SuperAuthError, UnknownError } from '../errors';
 
 export class SessionService<TContext> {
   constructor(
@@ -21,7 +21,7 @@ export class SessionService<TContext> {
   createSession(
     sessionData: Record<string, unknown>,
     providerId: AuthProviderId,
-  ): ResultAsync<string, AuthError> {
+  ): ResultAsync<string, SuperAuthError> {
     return createUserSessionPayload({
       authConfig: this.config,
       providerName: providerId,
@@ -35,7 +35,7 @@ export class SessionService<TContext> {
         }),
       )
       .mapErr((error) => {
-        if (error instanceof AuthError) {
+        if (error instanceof SuperAuthError) {
           return error;
         }
         return new UnknownError({
@@ -50,7 +50,7 @@ export class SessionService<TContext> {
   // --------------------------------------------
   getSession(
     context: TContext,
-  ): ResultAsync<UserSessionPayload | null, AuthError> {
+  ): ResultAsync<UserSessionPayload | null, SuperAuthError> {
     return this.userSessionStorage
       .getSession(context)
       .andThen((session) => {
@@ -64,7 +64,7 @@ export class SessionService<TContext> {
         });
       })
       .mapErr((error) => {
-        if (error instanceof AuthError) {
+        if (error instanceof SuperAuthError) {
           return error;
         }
         return new UnknownError({
@@ -77,9 +77,9 @@ export class SessionService<TContext> {
   // --------------------------------------------
   // Delete session
   // --------------------------------------------
-  deleteSession(context: TContext): ResultAsync<void, AuthError> {
+  deleteSession(context: TContext): ResultAsync<void, SuperAuthError> {
     return this.userSessionStorage.deleteSession(context).mapErr((error) => {
-      if (error instanceof AuthError) {
+      if (error instanceof SuperAuthError) {
         return error;
       }
       return new UnknownError({

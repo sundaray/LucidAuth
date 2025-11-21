@@ -1,11 +1,11 @@
-export class AuthError extends Error {
+export class SuperAuthError extends Error {
   constructor(options: { message: string; cause?: unknown }) {
     super(options.message, { cause: options.cause });
     this.name = 'AuthError';
   }
 }
 
-export class CallbackError extends AuthError {
+export class CallbackError extends SuperAuthError {
   constructor(options: {
     callback: string;
     message?: string;
@@ -21,7 +21,7 @@ export class CallbackError extends AuthError {
   }
 }
 
-export class UnknownError extends AuthError {
+export class UnknownError extends SuperAuthError {
   constructor(options: { message?: string; cause?: unknown; context: string }) {
     super({
       message: `Unknown error occurred in ${options.context}`,
