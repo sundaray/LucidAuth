@@ -2,9 +2,11 @@ import { ok, err, ResultAsync, safeTry } from 'neverthrow';
 import type { CredentialProvider as CredentialProviderType } from '../types.js';
 import { hashPassword } from '../../core/password/hash.js';
 import { verifyPassword } from '../../core/password/verify.js';
-import { generateEmailVerificationToken } from '../../core/verification/generate-email-verification-token.js';
-import { verifyEmailVerificationToken } from '../../core/verification/verify-email-verification-token.js';
-import { buildEmailVerificationUrl } from '../../core/verification/build-email-verification-url.js';
+import {
+  generateEmailVerificationToken,
+  verifyEmailVerificationToken,
+  buildEmailVerificationUrl,
+} from '../../core/verification';
 import {
   SignUpError,
   SignInError,
@@ -128,7 +130,7 @@ export class CredentialProvider implements CredentialProviderType {
   verifyEmail(
     token: string,
     secret: string,
-  ): ResultAsync<User, VerifyEmailError> {
+  ): ResultAsync<{ email: string }, VerifyEmailError> {
     const config = this.config;
     return safeTry(async function* () {
       const email = yield* verifyEmailVerificationToken(token, secret);

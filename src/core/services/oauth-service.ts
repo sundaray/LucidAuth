@@ -13,8 +13,8 @@ import {
 import { OAUTH_STATE_MAX_AGE } from '../constants.js';
 import type { SignInOptions } from '../../types/index.js';
 import { ResultAsync, safeTry, ok, err } from 'neverthrow';
-import { InitiateSignInError, CompleteSignInError } from './errors.js';
-import { AuthError } from '../errors.js';
+import { AuthError, UnknownError } from '../errors.js';
+import { OAuthStateCookieNotFoundError } from '../oauth/errors.js';
 
 export class OAuthService<TContext> {
   constructor(
@@ -65,8 +65,8 @@ export class OAuthService<TContext> {
       if (error instanceof AuthError) {
         return error;
       }
-      return new InitiateSignInError({
-        message: `Failed to initiate OAuth sign-in.)`,
+      return new UnknownError({
+        context: 'oauth-service.initiateSignIn',
         cause: error,
       });
     });
@@ -94,11 +94,7 @@ export class OAuthService<TContext> {
       const oauthStateJWE = yield* oauthStateStorage.getSession(context);
 
       if (!oauthStateJWE) {
-        return err(
-          new CompleteSignInError({
-            message: 'OAuth state cookie not found.',
-          }),
-        );
+        return err(new OAuthStateCookieNotFoundError());
       }
 
       // Decrypt OAuth state
@@ -121,9 +117,8 @@ export class OAuthService<TContext> {
       if (error instanceof AuthError) {
         return error;
       }
-
-      return new CompleteSignInError({
-        message: 'Failed to complete OAuth sign-in.',
+      return new UnknownError({
+        context: 'oauth-service.completeSignIn',
         cause: error,
       });
     });

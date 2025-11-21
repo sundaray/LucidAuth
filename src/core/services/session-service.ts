@@ -1,17 +1,13 @@
-import type { AuthConfig } from '../../types/index.js';
-import type { SessionStorage, UserSessionPayload } from '../session/types.js';
+import type { AuthConfig } from '../../types';
+import type { SessionStorage, UserSessionPayload } from '../session/types';
 import {
   encryptUserSessionPayload,
   decryptUserSession,
   createUserSessionPayload,
-} from '../session/index.js';
-import type { AuthProviderId } from '../../providers/types.js';
+} from '../session';
+import type { AuthProviderId } from '../../providers/types';
 import { ResultAsync, okAsync } from 'neverthrow';
-import {
-  CreateSessionError,
-  GetSessionError,
-  DeleteSessionError,
-} from '../session/errors.js';
+import { AuthError, UnknownError } from '../errors';
 
 export class SessionService<TContext> {
   constructor(
@@ -25,7 +21,7 @@ export class SessionService<TContext> {
   createSession(
     sessionData: Record<string, unknown>,
     providerId: AuthProviderId,
-  ): ResultAsync<string, CreateSessionError> {
+  ): ResultAsync<string, AuthError> {
     return createUserSessionPayload({
       authConfig: this.config,
       providerName: providerId,
@@ -39,7 +35,11 @@ export class SessionService<TContext> {
         }),
       )
       .mapErr((error) => {
-        return new CreateSessionError({
+        if (error instanceof AuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'session-service.createSession',
           cause: error,
         });
       });
@@ -50,7 +50,7 @@ export class SessionService<TContext> {
   // --------------------------------------------
   getSession(
     context: TContext,
-  ): ResultAsync<UserSessionPayload | null, GetSessionError> {
+  ): ResultAsync<UserSessionPayload | null, AuthError> {
     return this.userSessionStorage
       .getSession(context)
       .andThen((session) => {
@@ -64,10 +64,11 @@ export class SessionService<TContext> {
         });
       })
       .mapErr((error) => {
-        if (error instanceof GetSessionError) {
+        if (error instanceof AuthError) {
           return error;
         }
-        return new GetSessionError({
+        return new UnknownError({
+          context: 'session-service.getSession',
           cause: error,
         });
       });
@@ -76,9 +77,13 @@ export class SessionService<TContext> {
   // --------------------------------------------
   // Delete session
   // --------------------------------------------
-  deleteSession(context: TContext): ResultAsync<void, DeleteSessionError> {
+  deleteSession(context: TContext): ResultAsync<void, AuthError> {
     return this.userSessionStorage.deleteSession(context).mapErr((error) => {
-      return new DeleteSessionError({
+      if (error instanceof AuthError) {
+        return error;
+      }
+      return new UnknownError({
+        context: 'session-service.deleteSession',
         cause: error,
       });
     });

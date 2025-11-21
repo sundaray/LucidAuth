@@ -1,11 +1,7 @@
-import type { AuthConfig } from '../../types/index.js';
-import type { CredentialProvider } from '../../providers/types.js';
+import type { AuthConfig } from '../../types';
+import type { CredentialProvider } from '../../providers/types';
 import { Result, ResultAsync } from 'neverthrow';
-import {
-  SignUpError,
-  SignInError,
-  VerifyEmailError,
-} from '../../providers/credential/errors.js';
+import { AuthError, UnknownError } from '../errors';
 
 export class CredentialService {
   constructor(private config: AuthConfig) {}
@@ -16,14 +12,22 @@ export class CredentialService {
   signUp(
     provider: CredentialProvider,
     data: { email: string; password: string; [key: string]: unknown },
-  ): ResultAsync<{ success: boolean }, SignUpError> {
+  ): ResultAsync<{ success: boolean }, AuthError> {
     const config = this.config;
     return provider
       .signUp(data, config.session.secret, config.baseUrl)
       .map(() => {
         return { success: true };
       })
-      .mapErr((error) => new SignUpError({ cause: error }));
+      .mapErr((error) => {
+        if (error instanceof AuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'credential-service.signUp',
+          cause: error,
+        });
+      });
   }
   // --------------------------------------------
   // Sign in with credentials
@@ -33,7 +37,7 @@ export class CredentialService {
     data: { email: string; password: string },
   ): ResultAsync<
     { sessionData: Record<string, unknown>; redirectTo: `/${string}` },
-    SignInError
+    AuthError
   > {
     return provider
       .signIn(data)
@@ -44,7 +48,15 @@ export class CredentialService {
           redirectTo: '/' as const,
         };
       })
-      .mapErr((error) => new SignInError({ cause: error }));
+      .mapErr((error) => {
+        if (error instanceof AuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'credential-service.signIn',
+          cause: error,
+        });
+      });
   }
   // --------------------------------------------
   // Verify email
@@ -52,10 +64,7 @@ export class CredentialService {
   verifyEmail(
     request: Request,
     provider: CredentialProvider,
-  ): ResultAsync<
-    { success: boolean; redirectTo: `/${string}` },
-    VerifyEmailError
-  > {
+  ): ResultAsync<{ success: boolean; redirectTo: `/${string}` }, AuthError> {
     const config = this.config;
     const errorUrl = provider.config.emailVerification.onError;
     const successUrl = provider.config.emailVerification.onSuccess;
@@ -94,7 +103,13 @@ export class CredentialService {
         return { success: true, redirectTo: successUrl };
       })(),
       (error) => {
-        return new VerifyEmailError({ cause: error });
+        if (error instanceof AuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'credential-service.signIn',
+          cause: error,
+        });
       },
     );
   }

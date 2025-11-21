@@ -1,4 +1,4 @@
-import { AuthError } from '../errors.js';
+import { AuthError } from '../errors';
 
 export class GenerateStateError extends AuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {

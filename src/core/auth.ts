@@ -1,23 +1,17 @@
 import type { AuthConfig } from '../types/index.js';
-import type { SessionStorage, UserSessionPayload } from './session/types.js';
-import type { AnyAuthProvider, AuthProviderId } from '../providers/types.js';
+import type { SessionStorage, UserSessionPayload } from './session/types';
+import type { AnyAuthProvider, AuthProviderId } from '../providers/types';
 import { ok, ResultAsync, errAsync, safeTry } from 'neverthrow';
 
-import { OAuthService } from './services/oauth-service.js';
-import { CredentialService } from './services/credential-service.js';
-import { SessionService } from './services/session-service.js';
-import { ProviderRegistry } from './services/provider-registry.js';
-
-import { ProviderNotFoundError } from './oauth/errors.js';
 import {
-  SignOutError,
-  HandleVerifyEmailError,
-  HandleOAuthCallbackError,
-  SignUpError,
-  SignInError,
-} from './errors.js';
-import { GetUserSessionError } from './session/errors.js';
-import { AuthError } from './errors.js';
+  OAuthService,
+  CredentialService,
+  SessionService,
+  ProviderRegistry,
+} from './services';
+
+import { InvalidProviderTypeError } from './oauth/errors';
+import { AuthError, UnknownError } from './errors';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,
@@ -45,12 +39,12 @@ export function createAuthHelpers<TContext>(
         | { email: string; password: string; redirectTo: `/${string}` },
     ): ResultAsync<
       { authorizationUrl: string } | { redirectTo: `/${string}` },
-      SignInError
+      AuthError
     > => {
       const providerResult = providerRegistry.get(providerId);
 
       if (providerResult.isErr()) {
-        return errAsync(new SignInError({ cause: providerResult.error }));
+        return errAsync(providerResult.error);
       }
       const provider = providerResult.value;
 
@@ -69,9 +63,8 @@ export function createAuthHelpers<TContext>(
             if (error instanceof AuthError) {
               return error;
             }
-
-            return new SignInError({
-              message: 'OAuth sign in failed.',
+            return new UnknownError({
+              context: 'auth.signIn.oauth',
               cause: error,
             });
           });
@@ -107,16 +100,19 @@ export function createAuthHelpers<TContext>(
 
           return ok({ redirectTo });
         }).mapErr((error) => {
-          return new SignInError({
-            message: 'Credential sign in failed.',
+          if (error instanceof AuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.signUp',
             cause: error,
           });
         });
       }
 
       return errAsync(
-        new SignInError({
-          message: 'Sign in failed: Unsupported provider type.',
+        new UnknownError({
+          context: 'auth.signIn',
         }),
       );
     },
@@ -128,14 +124,20 @@ export function createAuthHelpers<TContext>(
       email: string;
       password: string;
       [key: string]: unknown;
-    }): ResultAsync<{ success: boolean }, SignUpError> => {
+    }): ResultAsync<{ success: boolean }, AuthError> => {
       return providerRegistry
         .getCredentialProvider()
         .asyncAndThen((provider) => {
           return credentialService.signUp(provider, data);
         })
         .mapErr((error) => {
-          return new SignUpError({ cause: error });
+          if (error instanceof AuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.signOut',
+            cause: error,
+          });
         });
     },
     // --------------------------------------------
@@ -143,12 +145,18 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     signOut: (
       context: TContext,
-    ): ResultAsync<{ redirectTo: string }, SignOutError> => {
+    ): ResultAsync<{ redirectTo: string }, AuthError> => {
       return sessionService
         .deleteSession(context)
         .map(() => ({ redirectTo: '/' }))
         .mapErr((error) => {
-          return new SignOutError({ cause: error });
+          if (error instanceof AuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.signOut',
+            cause: error,
+          });
         });
     },
     // --------------------------------------------
@@ -156,9 +164,15 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     getUserSession: (
       context: TContext,
-    ): ResultAsync<UserSessionPayload | null, GetUserSessionError> => {
+    ): ResultAsync<UserSessionPayload | null, AuthError> => {
       return sessionService.getSession(context).mapErr((error) => {
-        return new GetUserSessionError({ cause: error });
+        if (error instanceof AuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'auth.getUserSession',
+          cause: error,
+        });
       });
     },
     // --------------------------------------------
@@ -168,25 +182,19 @@ export function createAuthHelpers<TContext>(
       request: Request,
       context: TContext,
       providerId: AuthProviderId,
-    ): ResultAsync<{ redirectTo: `/${string}` }, HandleOAuthCallbackError> => {
+    ): ResultAsync<{ redirectTo: `/${string}` }, AuthError> => {
       const providerResult = providerRegistry.get(providerId);
 
       if (providerResult.isErr()) {
-        return errAsync(
-          new HandleOAuthCallbackError({ cause: providerResult.error }),
-        );
+        return errAsync(providerResult.error);
       }
 
       const provider = providerResult.value;
+
       if (provider.type !== 'oauth') {
-        return errAsync(
-          new HandleOAuthCallbackError({
-            cause: new ProviderNotFoundError({
-              providerId,
-            }),
-          }),
-        );
+        return errAsync(new InvalidProviderTypeError({ providerId }));
       }
+
       return safeTry(async function* () {
         // Complete OAuth sign-in
         const { sessionData, redirectTo } = yield* oauthService.completeSignIn(
@@ -194,8 +202,6 @@ export function createAuthHelpers<TContext>(
           context,
           provider,
         );
-
-        console.log('User claims received from Google: ', sessionData);
 
         // Create session
         const session = yield* sessionService.createSession(
@@ -211,7 +217,11 @@ export function createAuthHelpers<TContext>(
 
         return ok({ redirectTo });
       }).mapErr((error) => {
-        return new HandleOAuthCallbackError({
+        if (error instanceof AuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'auth.handleOAuthCallback',
           cause: error,
         });
       });
@@ -221,14 +231,20 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     handleVerifyEmail: (
       request: Request,
-    ): ResultAsync<{ redirectTo: `/${string}` }, HandleVerifyEmailError> => {
+    ): ResultAsync<{ redirectTo: `/${string}` }, AuthError> => {
       return providerRegistry
         .getCredentialProvider()
         .asyncAndThen((provider) => {
           return credentialService.verifyEmail(request, provider);
         })
         .mapErr((error) => {
-          return new HandleVerifyEmailError({ cause: error });
+          if (error instanceof AuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.handleVerifyEmail',
+            cause: error,
+          });
         });
     },
   };

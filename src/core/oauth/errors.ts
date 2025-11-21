@@ -1,6 +1,6 @@
 import { AuthError } from '../errors.js';
 
-export class MissingAuthorizationCodeError extends AuthError {
+export class AuthorizationCodeNotFoundError extends AuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Missing authorization code in URL.',
@@ -10,7 +10,7 @@ export class MissingAuthorizationCodeError extends AuthError {
   }
 }
 
-export class MissingStateError extends AuthError {
+export class StateNotFoundError extends AuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Missing state in URL.',
@@ -20,7 +20,7 @@ export class MissingStateError extends AuthError {
   }
 }
 
-export class MissingOAuthStateCookieError extends AuthError {
+export class OAuthStateCookieNotFoundError extends AuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'OAuth state cookie not found',
@@ -87,5 +87,15 @@ export class ProviderNotFoundError extends AuthError {
       cause: options.cause,
     });
     this.name = 'ProviderNotFoundError';
+  }
+}
+
+export class InvalidProviderTypeError extends AuthError {
+  constructor(options: { providerId: string; cause?: unknown }) {
+    super({
+      message: `'${options.providerId}' provider type is not supported.`,
+      cause: options.cause,
+    });
+    this.name = 'InvalidProviderTypeError';
   }
 }

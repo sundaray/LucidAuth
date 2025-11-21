@@ -1,5 +1,8 @@
 export interface User {
-  email: string;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+  role?: string | null;
   [key: string]: unknown;
 }
 
