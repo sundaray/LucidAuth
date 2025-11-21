@@ -1,11 +1,4 @@
 import type { AuthError } from '../core/errors.js';
-import type {
-  SignUpError,
-  SignInError,
-  AccountNotFoundError,
-  InvalidCredentialsError,
-  VerifyEmailError,
-} from './credential/errors.js';
 import { Result, ResultAsync } from 'neverthrow';
 import type { OAuthStatePayload } from '../core/oauth/types.js';
 import type { User, CredentialProviderConfig } from './credential/types.js';
@@ -50,18 +43,15 @@ export interface CredentialProvider {
     },
     secret: string,
     baseUrl: string,
-  ): ResultAsync<User, SignUpError>;
+  ): ResultAsync<User, AuthError>;
   signIn(data: {
     email: string;
     password: string;
-  }): ResultAsync<
-    User,
-    AccountNotFoundError | InvalidCredentialsError | SignInError
-  >;
+  }): ResultAsync<User, AuthError>;
   verifyEmail(
     token: string,
     secret: string,
-  ): ResultAsync<{ email: string }, VerifyEmailError>;
+  ): ResultAsync<{ email: string }, AuthError>;
 }
 
 export type AnyAuthProvider = OAuthProvider | CredentialProvider;

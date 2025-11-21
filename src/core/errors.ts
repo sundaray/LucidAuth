@@ -5,6 +5,22 @@ export class AuthError extends Error {
   }
 }
 
+export class CallbackError extends AuthError {
+  constructor(options: {
+    callback: string;
+    message?: string;
+    cause?: unknown;
+  }) {
+    super({
+      message:
+        options.message ||
+        `User callback '${options.callback}' failed to execute.`,
+      cause: options.cause,
+    });
+    this.name = 'CallbackError';
+  }
+}
+
 export class UnknownError extends AuthError {
   constructor(options: { message?: string; cause?: unknown; context: string }) {
     super({

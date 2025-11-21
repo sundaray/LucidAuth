@@ -7,14 +7,12 @@ import { decodeGoogleIdToken } from './decode-google-id-token.js';
 import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens.js';
 
 import {
-  MissingAuthorizationCodeError,
-  MissingStateError,
+  AuthorizationCodeNotFoundError,
+  StateNotFoundError,
   StateMismatchError,
 } from '../../core/oauth/errors.js';
 
-import { GoogleCompleteSignInError } from './errors.js';
-
-import { AuthError } from '../../core/errors.js';
+import { AuthError, UnknownError, CallbackError } from '../../core/errors.js';
 import { CreateAuthorizationUrlError } from '../../core/oauth/errors.js';
 
 // --------------------------------------------
@@ -75,11 +73,11 @@ export class GoogleProvider implements OAuthProvider {
       const state = url.searchParams.get('state');
 
       if (!code) {
-        return err(new MissingAuthorizationCodeError());
+        return err(new AuthorizationCodeNotFoundError());
       }
 
       if (!state) {
-        return err(new MissingStateError());
+        return err(new StateNotFoundError());
       }
 
       // Compare the state stored in cookie with state stored in URL
@@ -101,8 +99,11 @@ export class GoogleProvider implements OAuthProvider {
 
       return ok(userClaims);
     }).mapErr((error) => {
-      return new GoogleCompleteSignInError({
-        message: 'Failed to complete Google sign-in.',
+      if (error instanceof AuthError) {
+        return error;
+      }
+      return new UnknownError({
+        context: 'google-provider.completeSignin',
         cause: error,
       });
     });
@@ -117,8 +118,8 @@ export class GoogleProvider implements OAuthProvider {
     return ResultAsync.fromPromise(
       this.config.onAuthenticated(userClaims),
       (error) =>
-        new GoogleCompleteSignInError({
-          message: 'Failed to execute onAuthenticated callback.',
+        new CallbackError({
+          callback: 'onAuthenticated',
           cause: error,
         }),
     );

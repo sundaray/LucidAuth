@@ -1,21 +1,17 @@
 import { ok, err, ResultAsync, safeTry } from 'neverthrow';
-import type { CredentialProvider as CredentialProviderType } from '../types.js';
-import { hashPassword } from '../../core/password/hash.js';
-import { verifyPassword } from '../../core/password/verify.js';
+import type { CredentialProvider as CredentialProviderType } from '../types';
+import { hashPassword } from '../../core/password/hash';
+import { verifyPassword } from '../../core/password/verify';
 import {
   generateEmailVerificationToken,
   verifyEmailVerificationToken,
   buildEmailVerificationUrl,
 } from '../../core/verification';
-import {
-  SignUpError,
-  SignInError,
-  AccountNotFoundError,
-  InvalidCredentialsError,
-  VerifyEmailError,
-} from './errors.js';
+import { AccountNotFoundError, InvalidCredentialsError } from './errors';
 
-import type { User, CredentialProviderConfig } from './types.js';
+import { AuthError, UnknownError, CallbackError } from '../../core/errors';
+
+import type { User, CredentialProviderConfig } from './types';
 
 export class CredentialProvider implements CredentialProviderType {
   id = 'credential' as const;
@@ -34,7 +30,7 @@ export class CredentialProvider implements CredentialProviderType {
     },
     secret: string,
     baseUrl: string,
-  ): ResultAsync<User, SignUpError> {
+  ): ResultAsync<User, AuthError> {
     const config = this.config;
 
     return safeTry(async function* () {
@@ -50,7 +46,11 @@ export class CredentialProvider implements CredentialProviderType {
           hashedPassword,
           ...additionalFields,
         }),
-        (error) => new SignUpError({ cause: error }),
+        (error) =>
+          new CallbackError({
+            callback: 'onSignUp',
+            cause: error,
+          }),
       );
 
       // Generate token
@@ -72,23 +72,29 @@ export class CredentialProvider implements CredentialProviderType {
           email,
           url,
         }),
-        (error) => new SignUpError({ cause: error }),
+        (error) =>
+          new CallbackError({
+            callback: 'sendVerificationEmail',
+            cause: error,
+          }),
       );
 
       return ok(user);
     }).mapErr((error) => {
-      if (error instanceof SignUpError) return error;
-      return new SignUpError({ cause: error });
+      if (error instanceof AuthError) {
+        return error;
+      }
+      return new UnknownError({
+        context: 'credential-provider.signUp',
+        cause: error,
+      });
     });
   }
 
   signIn(data: {
     email: string;
     password: string;
-  }): ResultAsync<
-    User,
-    SignInError | AccountNotFoundError | InvalidCredentialsError
-  > {
+  }): ResultAsync<User, AuthError> {
     const config = this.config;
     return safeTry(async function* () {
       const { email, password } = data;
@@ -96,9 +102,14 @@ export class CredentialProvider implements CredentialProviderType {
       // Execure user's onSignIn callback
       const user = yield* ResultAsync.fromPromise(
         config.onSignIn({ email }),
-        (error) => new SignInError({ cause: error }),
+        (error) =>
+          new CallbackError({
+            callback: 'onSignIn',
+            cause: error,
+          }),
       );
-      // Clarify this
+
+      // User not found
       if (!user) {
         throw new AccountNotFoundError();
       }
@@ -115,34 +126,41 @@ export class CredentialProvider implements CredentialProviderType {
 
       return ok(user);
     }).mapErr((error) => {
-      if (
-        error instanceof SignInError ||
-        error instanceof AccountNotFoundError ||
-        error instanceof InvalidCredentialsError
-      ) {
+      if (error instanceof AuthError) {
         return error;
       }
-
-      return new SignInError({ cause: error });
+      return new UnknownError({
+        context: 'credential-provider.signIn',
+        cause: error,
+      });
     });
   }
 
   verifyEmail(
     token: string,
     secret: string,
-  ): ResultAsync<{ email: string }, VerifyEmailError> {
+  ): ResultAsync<{ email: string }, AuthError> {
     const config = this.config;
     return safeTry(async function* () {
       const email = yield* verifyEmailVerificationToken(token, secret);
       // Call user's onEmailVerified callback
       yield* ResultAsync.fromPromise(
         config.emailVerification.onEmailVerified({ email }),
-        (error) => new VerifyEmailError({ cause: error }),
+        (error) =>
+          new CallbackError({
+            callback: 'onEmailVerified',
+            cause: error,
+          }),
       );
       return ok({ email });
     }).mapErr((error) => {
-      if (error instanceof VerifyEmailError) return error;
-      return new VerifyEmailError({ cause: error });
+      if (error instanceof AuthError) {
+        return error;
+      }
+      return new UnknownError({
+        context: 'credential-provider.signIn',
+        cause: error,
+      });
     });
   }
 }
