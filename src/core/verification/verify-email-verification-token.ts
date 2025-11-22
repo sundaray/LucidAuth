@@ -5,6 +5,8 @@ import { VerifyEmailVerificationTokenError } from './errors.js';
 
 interface EmailVerificationPayload {
   email: string;
+  hashedPassword: string;
+  [key: string]: unknown;
 }
 
 export function verifyEmailVerificationToken(
@@ -20,7 +22,7 @@ export function verifyEmailVerificationToken(
         secretKey,
       );
 
-      return payload.email;
+      return payload;
     })(),
     (error) => new VerifyEmailVerificationTokenError({ cause: error }),
   );

@@ -23,7 +23,12 @@ export interface CredentialProviderConfig {
       email: string;
       hashedPassword: string;
       [key: string]: unknown;
-    }): Promise<UserSession>;
+    }): Promise<void>;
+    verifyEmailPath: `/${string}`;
+    redirects: {
+      emailVerificationSuccess: `/${string}`;
+      emailVerificationError: `/${string}`;
+    };
   };
   onSignIn(data: {
     email: string;

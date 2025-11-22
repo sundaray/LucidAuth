@@ -49,9 +49,9 @@ export interface CredentialProvider {
     password: string;
   }): ResultAsync<User, SuperAuthError>;
   verifyEmail(
-    token: string,
+    request: Request,
     secret: string,
-  ): ResultAsync<{ email: string }, SuperAuthError>;
+  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError>;
   forgotPassword(
     data: {
       email: string;

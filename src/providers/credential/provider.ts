@@ -6,6 +6,7 @@ import {
   generateEmailVerificationToken,
   verifyEmailVerificationToken,
   buildEmailVerificationUrl,
+  InvalidEmailVerificationTokenError,
 } from '../../core/verification';
 import {
   AccountAlreadyExistsError,
@@ -156,18 +157,29 @@ export class CredentialProvider implements CredentialProviderType {
   }
 
   verifyEmail(
-    token: string,
+    request: Request,
     secret: string,
-  ): ResultAsync<UserSession, SuperAuthError> {
+  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
     const config = this.config;
     return safeTry(async function* () {
-      //// Decrypt token to get email + hashedPassword + additionalFields
+      // Parse token from request URL
+      const tokenResult = Result.fromThrowable(() =>
+        new URL(request.url).searchParams.get('token'),
+      )();
+
+      if (tokenResult.isErr() || !tokenResult.value) {
+        return err(new InvalidEmailVerificationTokenError());
+      }
+
+      const token = tokenResult.value;
+
+      // Decrypt token to get email + hashedPassword + additionalFields
       const tokenPayload = yield* verifyEmailVerificationToken(token, secret);
 
       const { email, hashedPassword, ...additionalFields } = tokenPayload;
 
       // Call user's createUser callback
-      const user = yield* ResultAsync.fromPromise(
+      yield* ResultAsync.fromPromise(
         config.onSignUp.createUser({
           email,
           hashedPassword,
@@ -179,7 +191,9 @@ export class CredentialProvider implements CredentialProviderType {
             cause: error,
           }),
       );
-      return ok(user);
+      return ok({
+        redirectTo: config.onSignUp.redirects.emailVerificationSuccess,
+      });
     }).mapErr((error) => {
       if (error instanceof SuperAuthError) {
         return error;

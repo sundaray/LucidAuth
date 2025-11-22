@@ -64,55 +64,20 @@ export class CredentialService {
   verifyEmail(
     request: Request,
     provider: CredentialProvider,
-  ): ResultAsync<
-    { success: boolean; redirectTo: `/${string}` },
-    SuperAuthError
-  > {
+  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
     const config = this.config;
 
-    return ResultAsync.fromPromise(
-      (async () => {
-        // Try to parse the token
-        const tokenResult = Result.fromThrowable(() =>
-          new URL(request.url).searchParams.get('token'),
-        )();
-
-        // Handle Parse Error
-        if (tokenResult.isErr()) {
-          return { success: false, redirectTo: errorUrl };
-        }
-
-        const token = tokenResult.value;
-
-        // Handle Missing Token
-        if (!token) {
-          return { success: false, redirectTo: errorUrl };
-        }
-
-        // Try to verify the token
-        const verificationResult = await provider.verifyEmail(
-          token,
-          config.session.secret,
-        );
-
-        // Handle Verification Error (e.g., expired, invalid)
-        if (verificationResult.isErr()) {
-          return { success: false, redirectTo: errorUrl };
-        }
-
-        // Handle Success
-        return { success: true, redirectTo: successUrl };
-      })(),
-      (error) => {
+    return provider
+      .verifyEmail(request, config.session.secret)
+      .mapErr((error) => {
         if (error instanceof SuperAuthError) {
           return error;
         }
         return new UnknownError({
-          context: 'credential-service.signIn',
+          context: 'credential-service.verifyEmail',
           cause: error,
         });
-      },
-    );
+      });
   }
 
   // --------------------------------------------
