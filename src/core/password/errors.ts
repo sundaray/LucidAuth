@@ -78,3 +78,13 @@ export class VerifyPasswordResetTokenError extends SuperAuthError {
     this.name = 'VerifyPasswordresetTokenError';
   }
 }
+
+export class UserNotFoundError extends SuperAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'User not found.',
+      cause: options.cause,
+    });
+    this.name = 'UserNotFoundError';
+  }
+}

@@ -5,4 +5,5 @@ export { verifyPasswordResetToken } from './verify-password-reset-token';
 export {
   InvalidPasswordResetTokenError,
   PasswordResetTokenAlreadyUsedError,
+  UserNotFoundError,
 } from './errors';

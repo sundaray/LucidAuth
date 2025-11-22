@@ -4,24 +4,25 @@ import { Buffer } from 'node:buffer';
 import type { PasswordResetToken } from './types.js';
 import { VerifyPasswordResetTokenError } from './errors.js';
 
-interface PasswordResetPayload {
+interface PasswordResetTokenPayload {
   email: string;
+  passwordHash: string;
 }
 
 export function verifyPasswordResetToken(
   token: string,
   secret: string,
-): ResultAsync<PasswordResetToken, VerifyPasswordResetTokenError> {
+): ResultAsync<PasswordResetTokenPayload, VerifyPasswordResetTokenError> {
   return ResultAsync.fromPromise(
     (async () => {
       const secretKey = Buffer.from(secret, 'base64');
 
-      const { payload } = await jwtVerify<PasswordResetPayload>(
+      const { payload } = await jwtVerify<PasswordResetTokenPayload>(
         token,
         secretKey,
       );
 
-      return payload.email as PasswordResetToken;
+      return payload;
     })(),
     (error) => new VerifyPasswordResetTokenError({ cause: error }),
   );

@@ -23,6 +23,7 @@ import {
   verifyPasswordResetToken,
   InvalidPasswordResetTokenError,
   PasswordResetTokenAlreadyUsedError,
+  UserNotFoundError,
 } from '../../core/password';
 
 export class CredentialProvider implements CredentialProviderType {
@@ -259,7 +260,10 @@ export class CredentialProvider implements CredentialProviderType {
   verifyPasswordResetToken(
     request: Request,
     secret: string,
-  ): ResultAsync<{ email: string; passwordHash: string }, SuperAuthError> {
+  ): ResultAsync<
+    { email: string; passwordHash: string; redirectTo: `/${string}` },
+    SuperAuthError
+  > {
     const config = this.config;
 
     return safeTry(async function* () {
@@ -286,6 +290,10 @@ export class CredentialProvider implements CredentialProviderType {
           new CallbackError({ callback: 'checkUserExists', cause: error }),
       );
 
+      if (!result.exists) {
+        return err(new UserNotFoundError());
+      }
+
       const { passwordHash: dbPasswordHash } = result;
 
       // Compare token's passwprdHash with DB's passwordHash
@@ -299,7 +307,7 @@ export class CredentialProvider implements CredentialProviderType {
       return ok({
         email,
         passwordHash: dbPasswordHash,
-        redirectTo: config.onPasswordReset.redirects.checkEmail,
+        redirectTo: config.onPasswordReset.redirects.resetForm,
       });
     }).mapErr((error) => {
       if (error instanceof SuperAuthError) {
@@ -311,7 +319,7 @@ export class CredentialProvider implements CredentialProviderType {
       });
     });
   }
-
+  // --------------------------------------------
   // Reset Password
   // --------------------------------------------
   resetPassword(
@@ -334,6 +342,10 @@ export class CredentialProvider implements CredentialProviderType {
         (error) =>
           new CallbackError({ callback: 'checkUserExists', cause: error }),
       );
+
+      if (!result.exists) {
+        return err(new UserNotFoundError());
+      }
 
       const { passwordHash: currentPasswordHash } = result;
 
