@@ -12,7 +12,7 @@ interface EmailVerificationPayload {
 export function verifyEmailVerificationToken(
   token: string,
   secret: string,
-): ResultAsync<string, VerifyEmailVerificationTokenError> {
+): ResultAsync<EmailVerificationPayload, VerifyEmailVerificationTokenError> {
   return ResultAsync.fromPromise(
     (async () => {
       const secretKey = Buffer.from(secret, 'base64');

@@ -27,6 +27,8 @@ import {
   UserNotFoundError,
 } from '../../core/password';
 
+import { AUTH_ROUTES } from '../../core/constants';
+
 export class CredentialProvider implements CredentialProviderType {
   id = 'credential' as const;
   type = 'credential' as const;
@@ -81,7 +83,7 @@ export class CredentialProvider implements CredentialProviderType {
       const url = yield* buildEmailVerificationUrl(
         baseUrl,
         token,
-        '/api/auth/verify-email',
+        AUTH_ROUTES.VERIFY_EMAIL,
       );
 
       // Call user's sendVerificationEmail callback
@@ -155,7 +157,9 @@ export class CredentialProvider implements CredentialProviderType {
       });
     });
   }
-
+  // --------------------------------------------
+  // Verify Email
+  // --------------------------------------------
   verifyEmail(
     request: Request,
     secret: string,
@@ -243,7 +247,7 @@ export class CredentialProvider implements CredentialProviderType {
       const url = yield* buildPasswordResetUrl(
         baseUrl,
         token,
-        config.onPasswordReset.verifyPasswordResetTokenPath,
+        AUTH_ROUTES.VERIFY_PASSWORD_RESET_TOKEN,
       );
 
       // Call user's sendPasswordResetEmail callback

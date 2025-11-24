@@ -19,6 +19,8 @@ import {
 } from '../../core/errors.js';
 import { CreateAuthorizationUrlError } from '../../core/oauth/errors.js';
 
+import { AUTH_ROUTES } from '../../core/constants';
+
 // --------------------------------------------
 //
 // Google provider
@@ -49,7 +51,7 @@ export class GoogleProvider implements OAuthProvider {
 
         url.searchParams.set('response_type', 'code');
         url.searchParams.set('client_id', this.config.clientId);
-        url.searchParams.set('redirect_uri', this.config.redirectUri);
+        url.searchParams.set('redirect_uri', `${}`);
         url.searchParams.set('state', state);
         url.searchParams.set('code_challenge', codeChallenge);
         url.searchParams.set('code_challenge_method', 'S256');

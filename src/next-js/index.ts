@@ -42,9 +42,12 @@ interface AuthInstance {
   }) => Promise<{ success: boolean }>;
   signOut: () => Promise<void>;
   getUserSession: () => Promise<UserSessionPayload | null>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
   handlers: {
     google: (request: Request) => Promise<void>;
     verifyEmail: (request: Request) => Promise<void>;
+    verifyPasswordResetToken: (request: Request) => Promise<void>;
   };
   extendUserSessionMiddleware: ReturnType<
     typeof createExtendUserSessionMiddleware
@@ -120,23 +123,60 @@ export function superAuth(config: AuthConfig) {
           return unwrap(authHelpers.getUserSession(undefined));
         },
 
-        handlers: {
-          google: async (request: Request) => {
-            const { redirectTo } = await unwrap(
-              authHelpers.handleOAuthCallback(request, undefined, 'google'),
-            );
-            nextRedirect(redirectTo);
-          },
+        forgotPassword: async (email: string) => {
+          const { redirectTo } = await unwrap(
+            authHelpers.forgotPassword(email),
+          );
+          nextRedirect(redirectTo);
+        },
 
-          verifyEmail: async (request: Request) => {
-            const { redirectTo } = await unwrap(
+        resetPassword: async (token: string, newPassword: string) => {
+          const { redirectTo } = await unwrap(
+            authHelpers.handleResetPassword(token, newPassword),
+          );
+          nextRedirect(redirectTo);
+        },
+        handler: async (request:Request) => {
+          const url = new URL(request.url)
+          const pathname = url.pathname
+
+          // Extract route after /api/auth/
+          // Examples:
+          //   /api/auth/verify-email → verify-email
+          //   /api/auth/callback/google → callback/google
+          //   /api/auth/verify-password-reset-token → verify-password-reset-token
+          const route = pathname.replace(/^\/api\/auth\//, '').replace(/\/$/, '');
+
+          // ----------------
+          // Email Verification
+          // ----------------
+          if(route === 'verify-email') {
+const { redirectTo } = await unwrap(
               authHelpers.handleVerifyEmail(request),
             );
 
             nextRedirect(redirectTo);
-          },
-        },
+            return
+          }
 
+          // ---------------------------------
+          // Password Reset Token Verification
+          // ---------------------------------
+          if(route === 'verify-password-reset-token') {
+const { redirectTo } = await unwrap(
+              authHelpers.handleVerifyPasswordResetToken(request),
+            );
+            nextRedirect(redirectTo);
+            return;
+          }
+
+          // ----------------
+          // OAuth Callbacks
+          // ----------------
+
+
+        
+      
         extendUserSessionMiddleware,
       };
 

@@ -12,6 +12,7 @@ import {
 
 import { InvalidProviderTypeError } from './oauth/errors';
 import { SuperAuthError, UnknownError } from './errors';
+import type { SrvRecord } from 'node:dns';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,
@@ -243,6 +244,77 @@ export function createAuthHelpers<TContext>(
           }
           return new UnknownError({
             context: 'auth.handleVerifyEmail',
+            cause: error,
+          });
+        });
+    },
+
+    // --------------------------------------------
+    // Forgot Password
+    // --------------------------------------------
+    forgotPassword(
+      email: string,
+    ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
+      return providerRegistry
+        .getCredentialProvider()
+        .asyncAndThen((provider) => {
+          return credentialService.forgotPassword(provider, { email });
+        })
+        .mapErr((error) => {
+          if (error instanceof SuperAuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.forgotPassword',
+            cause: error,
+          });
+        });
+    },
+
+    // --------------------------------------------
+    // Handle Verify Password Reset Token
+    // --------------------------------------------
+    handleVerifyPasswordResetToken(
+      request: Request,
+    ): ResultAsync<
+      { email: string; passwordHash: string; redirectTo: `/${string}` },
+      SuperAuthError
+    > {
+      return providerRegistry
+        .getCredentialProvider()
+        .asyncAndThen((provider) => {
+          return credentialService.verifyPasswordResetToken(request, provider);
+        })
+        .mapErr((error) => {
+          if (error instanceof SuperAuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.handleVerifyPasswordResetToken',
+            cause: error,
+          });
+        });
+    },
+    // --------------------------------------------
+    // Handle Reset Password
+    // --------------------------------------------
+    handleResetPassword: (
+      token: string,
+      newPassword: string,
+    ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> => {
+      return providerRegistry
+        .getCredentialProvider()
+        .asyncAndThen((provider) => {
+          return credentialService.resetPassword(provider, token, {
+            newPassword,
+          });
+        })
+        .mapErr((error) => {
+          if (error instanceof SuperAuthError) {
+            return error;
+          }
+          return new UnknownError({
+            context: 'auth.handleResetPassword',
             cause: error,
           });
         });

@@ -1,12 +1,11 @@
-import { cookies } from 'next/headers';
-import type { CookieOptions } from '../core/session/types.js';
-import type { SessionStorage } from '../core/session/types.js';
 import { ResultAsync } from 'neverthrow';
+import { cookies } from 'next/headers';
+import type { CookieOptions, SessionStorage } from '../core/session/types';
 import {
   DeleteUserSessionError,
   GetUserSessionError,
   SaveUserSessionError,
-} from '../core/session/errors.js';
+} from '../core/session/errors';
 
 export class NextJsSessionStorage implements SessionStorage<undefined> {
   private cookieName: string;

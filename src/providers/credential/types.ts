@@ -24,7 +24,6 @@ export interface CredentialProviderConfig {
       hashedPassword: string;
       [key: string]: unknown;
     }): Promise<void>;
-    verifyEmailPath: `/${string}`;
     redirects: {
       emailVerificationSuccess: `/${string}`;
       emailVerificationError: `/${string}`;
@@ -45,7 +44,6 @@ export interface CredentialProviderConfig {
       hashedPassword: string;
     }): Promise<void>;
     sendPasswordChangeEmail(params: { email: string }): Promise<void>;
-    verifyPasswordResetTokenPath: `/${string}`;
     redirects: {
       checkEmail: `/${string}`;
       resetForm: `/${string}`;
