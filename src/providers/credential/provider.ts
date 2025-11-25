@@ -28,6 +28,7 @@ import {
 } from '../../core/password';
 
 import { AUTH_ROUTES } from '../../core/constants';
+import { appendErrorToPath } from '../../core/utils/append-error-to-path';
 
 export class CredentialProvider implements CredentialProviderType {
   id = 'credential' as const;
@@ -198,15 +199,26 @@ export class CredentialProvider implements CredentialProviderType {
       return ok({
         redirectTo: config.onSignUp.redirects.emailVerificationSuccess,
       });
-    }).mapErr((error) => {
-      if (error instanceof SuperAuthError) {
-        return error;
-      }
-      return new UnknownError({
-        context: 'credential-provider.signIn',
-        cause: error,
+    })
+      .orElse((error) => {
+        if (error instanceof SuperAuthError) {
+          const errorPath = config.onSignUp.redirects.emailVerificationError;
+          const redirectUrl = appendErrorToPath(
+            errorPath,
+            error.name,
+          ) as `/${string}`;
+
+          return ok({ redirectTo: redirectUrl });
+        }
+
+        return err(error);
+      })
+      .mapErr((error) => {
+        return new UnknownError({
+          context: 'credential-provider.signIn',
+          cause: error,
+        });
       });
-    });
   }
 
   // --------------------------------------------
@@ -330,15 +342,34 @@ export class CredentialProvider implements CredentialProviderType {
         passwordHash: dbPasswordHash,
         redirectTo: redirectUrl as `/${string}`,
       });
-    }).mapErr((error) => {
-      if (error instanceof SuperAuthError) {
-        return error;
-      }
-      return new UnknownError({
-        context: 'credential-provider.verifyPasswordResetToken',
-        cause: error,
+    })
+      .orElse((error) => {
+        // Only recover known domain errors
+        if (error instanceof SuperAuthError) {
+          const errorPath = config.onPasswordReset.redirects.resetPasswordError;
+          const redirectUrl = appendErrorToPath(
+            errorPath,
+            error.name,
+          ) as `/${string}`;
+
+          // For password reset errors, return with empty email/passwordHash
+          // since we're redirecting to error page
+          return ok({
+            email: '',
+            passwordHash: '',
+            redirectTo: redirectUrl,
+          });
+        }
+
+        // Pass unknown/system errors through to mapErr
+        return err(error);
+      })
+      .mapErr((error) => {
+        return new UnknownError({
+          context: 'credential-provider.verifyPasswordResetToken',
+          cause: error,
+        });
       });
-    });
   }
   // --------------------------------------------
   // Reset Password
