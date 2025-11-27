@@ -88,8 +88,8 @@ interface MockCredentialService {
 }
 
 interface MockSessionService {
+  createSession: Mock;
   getSession: Mock;
-  saveSession: Mock;
   deleteSession: Mock;
 }
 
@@ -121,8 +121,8 @@ export function createMockCredentialService(): MockCredentialService {
 
 export function createMockSessionService(): MockSessionService {
   return {
+    createSession: vi.fn(),
     getSession: vi.fn(),
-    saveSession: vi.fn(),
     deleteSession: vi.fn(),
   };
 }
@@ -138,6 +138,12 @@ export const mockUserSessionPayload: UserSessionPayload = {
   },
   provider: 'google',
   maxAge: 3600,
+};
+
+export const mockUserSessionData = {
+  id: 'user-123',
+  email: 'test@example.com',
+  name: 'Test User',
 };
 
 // ============================================
