@@ -57,13 +57,13 @@ export class CredentialProvider implements CredentialProviderType {
       const { email, password, ...additionalFields } = data;
 
       // Execute user's checkUserExists callback
-      const userExists = yield* ResultAsync.fromPromise(
+      const result = yield* ResultAsync.fromPromise(
         config.onSignUp.checkUserExists(email),
         (error) =>
           new CallbackError({ callback: 'checkUserExists', cause: error }),
       );
 
-      if (userExists) {
+      if (result.exists) {
         return err(new AccountAlreadyExistsError());
       }
 
