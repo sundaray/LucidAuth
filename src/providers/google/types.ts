@@ -28,7 +28,13 @@ export interface GoogleTokenResponse {
 }
 
 export interface GoogleProviderConfig {
+  /**
+   * The OAuth client ID of your Google Cloud project.
+   */
   clientId: string;
+  /**
+   * The OAuth client secret of your Google Cloud project.
+   */
   clientSecret: string;
   /**
    * A callback that SuperAuth executes after a user successfully authenticates with Google.

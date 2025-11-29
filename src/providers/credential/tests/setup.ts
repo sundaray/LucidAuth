@@ -21,7 +21,7 @@ export interface MockCredentialProviderConfig extends CredentialProviderConfig {
     checkUserExists: Mock;
     sendPasswordResetEmail: Mock;
     updatePassword: Mock;
-    sendPasswordUpdatedEmail: Mock;
+    sendPasswordUpdateEmail: Mock;
     redirects: {
       checkEmail: `/${string}`;
       resetForm: `/${string}`;
@@ -48,7 +48,7 @@ export function createMockCredentialProviderConfig(): MockCredentialProviderConf
       checkUserExists: vi.fn(),
       sendPasswordResetEmail: vi.fn(),
       updatePassword: vi.fn(),
-      sendPasswordUpdatedEmail: vi.fn(),
+      sendPasswordUpdateEmail: vi.fn(),
       redirects: {
         checkEmail: '/check-email',
         resetForm: '/reset-password',

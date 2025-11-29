@@ -1,7 +1,8 @@
-import type { SuperAuthError } from '../core/errors.js';
+import type { SuperAuthError } from '../core/errors';
 import { Result, ResultAsync } from 'neverthrow';
-import type { OAuthStatePayload } from '../core/oauth/types.js';
-import type { User, CredentialProviderConfig } from './credential/types.js';
+import type { OAuthStatePayload } from '../core/oauth/types';
+import type { UserSession } from '../core/session/types';
+import type { CredentialProviderConfig } from './credential/types';
 
 export type AuthProviderId = 'google' | 'credential';
 
@@ -41,7 +42,7 @@ export interface CredentialProvider {
   signIn(data: {
     email: string;
     password: string;
-  }): ResultAsync<User, SuperAuthError>;
+  }): ResultAsync<UserSession, SuperAuthError>;
   verifyEmail(
     request: Request,
     secret: string,
