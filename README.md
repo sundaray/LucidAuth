@@ -24,7 +24,7 @@ npm install lucidauth
 
 Follow the steps below to integrate Google OAuth and Email/Password authentication in your Next.js app.
 
-### 1. Setting Up Environment Variables
+### Setting Up Environment Variables
 
 Create a `.env.local` file at the root of your project and add the following environment variables.
 
@@ -41,32 +41,6 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ```
 
 You can generate a secure `SESSION_SECRET` by running the following command in your terminal:
-
-```bash
-openssl rand -base64 32
-```
-
-## Next.js Integration Guide
-
-Follow the steps below to integrate Google OAuth and Email/Password authentication in your Next.js app.
-
-### 1. Setting Up Environment Variables
-
-Create a `.env.local` file at the root of your project and add the following environment variables.
-
-```bash
-# The base URL of your application
-BASE_URL="http://localhost:3000"
-
-# A 32-byte random string encoded in Base64, used to sign and encrypt session tokens
-SESSION_SECRET="generated-secret-here"
-
-# Google OAuth Credentials
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-```
-
-ou can generate a secure `SESSION_SECRET` by running the following command in your terminal:
 
 ```bash
 openssl rand -base64 32
