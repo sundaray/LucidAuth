@@ -54,7 +54,7 @@ interface AuthInstance {
 // ============================================
 let instance: AuthInstance | null = null;
 
-export function superAuth(config: AuthConfig) {
+export function lucidAuth(config: AuthConfig) {
   if (!instance) {
     instance = createAuthInstance(config);
   }
