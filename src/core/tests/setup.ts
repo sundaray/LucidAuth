@@ -137,7 +137,6 @@ export const mockUserSessionPayload: UserSessionPayload = {
     name: 'Test User',
   },
   provider: 'google',
-  maxAge: 3600,
 };
 
 export const mockUserSessionData = {

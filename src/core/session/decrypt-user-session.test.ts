@@ -1,18 +1,21 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { encryptUserSessionPayload } from './';
-import { decryptUserSession } from './';
-import type { UserSessionPayload } from './';
+import { decryptUserSessionJWE } from './';
+import type { UserSession } from './';
 
 describe('decryptUserSession', () => {
   const validSecret = Buffer.from('this-is-a-32-byte-secret-key-!!!').toString(
     'base64',
   );
 
-  const mockPayload: UserSessionPayload = {
-    email: 'test@example.com',
-    name: 'Test User',
-    maxAge: 3600,
+  const mockUserSession: UserSession = {
+    user: {
+      id: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+    },
     provider: 'google',
+    expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
   };
 
   // Helper to create a valid JWE for testing decryption
@@ -33,8 +36,8 @@ describe('decryptUserSession', () => {
     test('should decrypt a valid JWE and return payload', async () => {
       const jwe = await createJWE();
 
-      const result = await decryptUserSession({
-        session: jwe,
+      const result = await decryptUserSessionJWE({
+        JWE: jwe,
         secret: validSecret,
       });
 
@@ -50,8 +53,8 @@ describe('decryptUserSession', () => {
     });
 
     test('should return error for malformed string', async () => {
-      const result = await decryptUserSession({
-        session: 'not.a.real.jwe',
+      const result = await decryptUserSessionJWE({
+        JWE: 'not.a.real.jwe',
         secret: validSecret,
       });
 
@@ -68,8 +71,8 @@ describe('decryptUserSession', () => {
         'wrong-32-byte-secret-key-!!!!!',
       ).toString('base64');
 
-      const result = await decryptUserSession({
-        session: jwe,
+      const result = await decryptUserSessionJWE({
+        JWE: jwe,
         secret: wrongSecret,
       });
 
@@ -103,8 +106,8 @@ describe('decryptUserSession', () => {
       // Advance 30 minutes
       vi.advanceTimersByTime(30 * 60 * 1000);
 
-      const result = await decryptUserSession({
-        session: jwe,
+      const result = await decryptUserSessionJWE({
+        JWE: jwe,
         secret: validSecret,
       });
 
@@ -121,8 +124,8 @@ describe('decryptUserSession', () => {
       // Advance 1 hour + 1 second
       vi.advanceTimersByTime(3600 * 1000 + 1000);
 
-      const result = await decryptUserSession({
-        session: jwe,
+      const result = await decryptUserSessionJWE({
+        JWE: jwe,
         secret: validSecret,
       });
 

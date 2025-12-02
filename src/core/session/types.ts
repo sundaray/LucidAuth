@@ -3,16 +3,33 @@ import { LucidAuthError } from '../errors';
 
 import { ResultAsync } from 'neverthrow';
 
-export interface UserSession {
+// ============================================
+// USER TYPES
+// ============================================
+export interface BaseUser {
+  id?: string | null;
   email?: string | null;
   name?: string | null;
   image?: string | null;
   role?: string | null;
-  [key: string]: unknown;
 }
 
-export interface UserSessionPayload extends UserSession {
-  maxAge: number;
+export interface User extends BaseUser {}
+
+// ============================================
+// SESSION TYPES
+// ============================================
+
+export interface BaseUserSession {
+  user: BaseUser;
+  provider: string;
+  expiresAt: string;
+}
+
+export interface UserSession extends BaseUserSession {}
+
+export interface UserSessionPayload {
+  user: User;
   provider: AuthProviderId;
 }
 

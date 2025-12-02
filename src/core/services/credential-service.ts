@@ -1,7 +1,8 @@
 import type { AuthConfig } from '../../types';
 import type { CredentialProvider } from '../../providers/types';
 import { ResultAsync } from 'neverthrow';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
+import type { User } from '../session';
 
 export class CredentialService {
   constructor(private config: AuthConfig) {}
@@ -12,7 +13,7 @@ export class CredentialService {
   signUp(
     provider: CredentialProvider,
     data: { email: string; password: string; [key: string]: unknown },
-  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
     const config = this.config;
     return provider
       .signUp(data, config.session.secret, config.baseUrl)
@@ -20,7 +21,7 @@ export class CredentialService {
         return { redirectTo: result.redirectTo };
       })
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -35,21 +36,18 @@ export class CredentialService {
   signIn(
     provider: CredentialProvider,
     data: { email: string; password: string },
-  ): ResultAsync<
-    { sessionData: Record<string, unknown>; redirectTo: `/${string}` },
-    SuperAuthError
-  > {
+  ): ResultAsync<{ user: User; redirectTo: `/${string}` }, LucidAuthError> {
     return provider
       .signIn(data)
       .map((user) => {
-        const { hashedPassword, ...sessionData } = user;
+        const { hashedPassword, ...rest } = user;
         return {
-          sessionData,
+          user: rest,
           redirectTo: '/' as const,
         };
       })
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -64,13 +62,13 @@ export class CredentialService {
   verifyEmail(
     request: Request,
     provider: CredentialProvider,
-  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
     const config = this.config;
 
     return provider
       .verifyEmail(request, config.session.secret)
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -86,13 +84,13 @@ export class CredentialService {
   forgotPassword(
     provider: CredentialProvider,
     data: { email: string },
-  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
     const config = this.config;
 
     return provider
       .forgotPassword(data, config.session.secret, config.baseUrl)
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -110,13 +108,13 @@ export class CredentialService {
     provider: CredentialProvider,
   ): ResultAsync<
     { email: string; passwordHash: string; redirectTo: `/${string}` },
-    SuperAuthError
+    LucidAuthError
   > {
     const config = this.config;
     return provider
       .verifyPasswordResetToken(request, config.session.secret)
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -133,11 +131,11 @@ export class CredentialService {
     provider: CredentialProvider,
     token: string,
     data: { newPassword: string },
-  ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
     return provider
       .resetPassword(token, data, this.config.session.secret)
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({

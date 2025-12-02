@@ -10,8 +10,9 @@ import { encryptOAuthStatePayload, decryptOAuthStateJWE } from '../oauth';
 import { OAUTH_STATE_MAX_AGE } from '../constants';
 import type { SignInOptions } from '../../types';
 import { ResultAsync, safeTry, ok, err } from 'neverthrow';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 import { OAuthStateCookieNotFoundError } from '../oauth/errors';
+import type { User } from '../session/types';
 
 export class OAuthService<TContext> {
   constructor(
@@ -27,7 +28,7 @@ export class OAuthService<TContext> {
     options?: SignInOptions,
   ): ResultAsync<
     { authorizationUrl: string; oauthStateJWE: string },
-    SuperAuthError
+    LucidAuthError
   > {
     const config = this.config;
 
@@ -60,7 +61,7 @@ export class OAuthService<TContext> {
         oauthStateJWE,
       });
     }).mapErr((error) => {
-      if (error instanceof SuperAuthError) {
+      if (error instanceof LucidAuthError) {
         return error;
       }
       return new UnknownError({
@@ -79,10 +80,10 @@ export class OAuthService<TContext> {
     provider: OAuthProvider,
   ): ResultAsync<
     {
-      sessionData: Record<string, unknown>;
+      user: User;
       redirectTo: `/${string}`;
     },
-    SuperAuthError
+    LucidAuthError
   > {
     const config = this.config;
     const oauthStateStorage = this.oauthStateStorage;
@@ -109,14 +110,14 @@ export class OAuthService<TContext> {
       );
 
       // Call provider's onAuthenticated callback
-      const sessionData = yield* provider.onAuthenticated(userClaims);
+      const user = yield* provider.onAuthenticated(userClaims);
 
       return ok({
-        sessionData,
+        user,
         redirectTo: oauthState.redirectTo || '/',
       });
     }).mapErr((error) => {
-      if (error instanceof SuperAuthError) {
+      if (error instanceof LucidAuthError) {
         return error;
       }
       return new UnknownError({

@@ -1,13 +1,16 @@
 import type { AuthConfig } from '../../types';
-import type { SessionStorage, UserSessionPayload } from '../session/types';
+import type { SessionStorage } from '../session/types';
 import {
   encryptUserSessionPayload,
-  decryptUserSession,
+  decryptUserSessionJWE,
   createUserSessionPayload,
+  type User,
+  type UserSession,
+  type UserSessionJWE,
 } from '../session';
 import type { AuthProviderId } from '../../providers/types';
 import { ResultAsync, okAsync } from 'neverthrow';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 export class SessionService<TContext> {
   constructor(
@@ -19,13 +22,12 @@ export class SessionService<TContext> {
   // Create session
   // --------------------------------------------
   createSession(
-    sessionData: Record<string, unknown>,
-    providerId: AuthProviderId,
-  ): ResultAsync<string, SuperAuthError> {
+    user: User,
+    provider: AuthProviderId,
+  ): ResultAsync<UserSessionJWE, LucidAuthError> {
     return createUserSessionPayload({
-      authConfig: this.config,
-      providerName: providerId,
-      userClaims: sessionData,
+      user,
+      provider,
     })
       .andThen((userSessionPayload) =>
         encryptUserSessionPayload({
@@ -35,7 +37,7 @@ export class SessionService<TContext> {
         }),
       )
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -50,21 +52,21 @@ export class SessionService<TContext> {
   // --------------------------------------------
   getSession(
     context: TContext,
-  ): ResultAsync<UserSessionPayload | null, SuperAuthError> {
+  ): ResultAsync<UserSession | null, LucidAuthError> {
     return this.userSessionStorage
       .getSession(context)
-      .andThen((session) => {
-        if (!session) {
+      .andThen((userSessionJWE) => {
+        if (!userSessionJWE) {
           return okAsync(null);
         }
 
-        return decryptUserSession({
-          session,
+        return decryptUserSessionJWE({
+          userSessionJWE,
           secret: this.config.session.secret,
         });
       })
       .mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -77,9 +79,9 @@ export class SessionService<TContext> {
   // --------------------------------------------
   // Delete session
   // --------------------------------------------
-  deleteSession(context: TContext): ResultAsync<void, SuperAuthError> {
+  deleteSession(context: TContext): ResultAsync<void, LucidAuthError> {
     return this.userSessionStorage.deleteSession(context).mapErr((error) => {
-      if (error instanceof SuperAuthError) {
+      if (error instanceof LucidAuthError) {
         return error;
       }
       return new UnknownError({

@@ -1,5 +1,10 @@
 export { encryptUserSessionPayload } from './encrypt-user-session-payload';
-export { decryptUserSession } from './decrypt-user-session';
+export { decryptUserSessionJWE } from './decrypt-user-session-jwe';
 export { createUserSessionPayload } from './create-user-session-payload';
 
-export type { UserSessionPayload } from './types';
+export type {
+  User,
+  UserSession,
+  UserSessionPayload,
+  UserSessionJWE,
+} from './types';

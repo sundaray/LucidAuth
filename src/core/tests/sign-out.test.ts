@@ -13,7 +13,7 @@ import {
   createMockSessionService,
   createMockSessionStorage,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 // ============================================
 // MOCK SERVICE MODULES
@@ -65,8 +65,8 @@ describe('signout', () => {
     expect(result._unsafeUnwrap()).toEqual({ redirectTo: '/' });
   });
 
-  test('should pass through SuperAuthError from sessionService.deleteSession', async () => {
-    const deleteError = new SuperAuthError({
+  test('should pass through LucidAuthError from sessionService.deleteSession', async () => {
+    const deleteError = new LucidAuthError({
       message: 'Failed to delete session',
     });
 

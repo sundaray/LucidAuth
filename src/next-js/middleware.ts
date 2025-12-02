@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { decryptUserSession, encryptUserSessionPayload } from '../core/session';
+import {
+  decryptUserSessionJWE,
+  encryptUserSessionPayload,
+} from '../core/session';
 import type { AuthConfig } from '../types';
 import { COOKIE_NAMES } from '../core/constants';
 
@@ -21,8 +24,8 @@ export function createExtendUserSessionMiddleware(config: AuthConfig) {
     }
 
     // Decrypt the session to check expiration
-    const decryptResult = await decryptUserSession({
-      session: userSessionCookie.value,
+    const decryptResult = await decryptUserSessionJWE({
+      userSessionJWE: userSessionCookie.value,
       secret: config.session.secret,
     });
 

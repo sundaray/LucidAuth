@@ -1,22 +1,19 @@
 import { ResultAsync, okAsync } from 'neverthrow';
-import type { AuthConfig } from '../../types';
 import type { AuthProviderId } from '../../providers/types';
-import type { UserSessionPayload } from './';
+import type { User, UserSessionPayload } from './';
 
 interface CreateUserSessionPayloadParams {
-  authConfig: AuthConfig;
-  providerName: AuthProviderId;
-  userClaims: Record<string, any>;
+  provider: AuthProviderId;
+  user: User;
 }
 
 export function createUserSessionPayload(
   params: CreateUserSessionPayloadParams,
 ): ResultAsync<UserSessionPayload, never> {
-  const { authConfig, providerName, userClaims } = params;
+  const { provider, user } = params;
 
   return okAsync({
-    maxAge: authConfig.session.maxAge,
-    provider: providerName,
-    ...userClaims,
+    user,
+    provider,
   });
 }

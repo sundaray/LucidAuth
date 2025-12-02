@@ -13,7 +13,7 @@ import {
   createMockSessionService,
   createMockSessionStorage,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 // ============================================
 // MOCK SERVICE MODULES
@@ -89,8 +89,8 @@ describe('forgotPassword', () => {
     );
   });
 
-  test('should pass through SuperAuthError from getCredentialProvider', async () => {
-    const getCredentialProviderError = new SuperAuthError({
+  test('should pass through LucidAuthError from getCredentialProvider', async () => {
+    const getCredentialProviderError = new LucidAuthError({
       message: 'No credential provider configured',
     });
 
@@ -104,8 +104,8 @@ describe('forgotPassword', () => {
     expect(result._unsafeUnwrapErr()).toBe(getCredentialProviderError);
   });
 
-  test('should pass through SuperAuthError from credentialService.forgotPassword', async () => {
-    const forgotPasswordError = new SuperAuthError({
+  test('should pass through LucidAuthError from credentialService.forgotPassword', async () => {
+    const forgotPasswordError = new LucidAuthError({
       message: 'No user found with this email',
     });
 

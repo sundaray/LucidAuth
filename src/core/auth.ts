@@ -1,5 +1,5 @@
 import type { AuthConfig } from '../types/index.js';
-import type { SessionStorage, UserSessionPayload } from './session/types';
+import type { SessionStorage, UserSession } from './session/types';
 import type { AnyAuthProvider, AuthProviderId } from '../providers/types';
 import { ok, ResultAsync, errAsync, safeTry } from 'neverthrow';
 
@@ -11,7 +11,7 @@ import {
 } from './services';
 
 import { InvalidProviderTypeError } from './oauth/errors';
-import { SuperAuthError, UnknownError } from './errors';
+import { LucidAuthError, UnknownError } from './errors';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,
@@ -39,7 +39,7 @@ export function createAuthHelpers<TContext>(
         | { email: string; password: string; redirectTo: `/${string}` },
     ): ResultAsync<
       { authorizationUrl: string } | { redirectTo: `/${string}` },
-      SuperAuthError
+      LucidAuthError
     > => {
       const providerResult = providerRegistry.get(providerId);
 
@@ -60,7 +60,7 @@ export function createAuthHelpers<TContext>(
               .map(() => ({ authorizationUrl }));
           })
           .mapErr((error) => {
-            if (error instanceof SuperAuthError) {
+            if (error instanceof LucidAuthError) {
               return error;
             }
             return new UnknownError({
@@ -81,7 +81,7 @@ export function createAuthHelpers<TContext>(
             yield* providerRegistry.getCredentialProvider();
 
           // Sign in
-          const { sessionData, redirectTo } = yield* credentialService.signIn(
+          const { user, redirectTo } = yield* credentialService.signIn(
             credentialProvider,
             {
               email: data.email,
@@ -91,7 +91,7 @@ export function createAuthHelpers<TContext>(
 
           // 3. Create user session
           const sessionJWE = yield* sessionService.createSession(
-            sessionData,
+            user,
             'credential',
           );
 
@@ -100,7 +100,7 @@ export function createAuthHelpers<TContext>(
 
           return ok({ redirectTo });
         }).mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({
@@ -124,14 +124,14 @@ export function createAuthHelpers<TContext>(
       email: string;
       password: string;
       [key: string]: unknown;
-    }): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> => {
+    }): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> => {
       return providerRegistry
         .getCredentialProvider()
         .asyncAndThen((provider) => {
           return credentialService.signUp(provider, data);
         })
         .mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({
@@ -145,12 +145,12 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     signOut: (
       context: TContext,
-    ): ResultAsync<{ redirectTo: string }, SuperAuthError> => {
+    ): ResultAsync<{ redirectTo: string }, LucidAuthError> => {
       return sessionService
         .deleteSession(context)
         .map(() => ({ redirectTo: '/' }))
         .mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({
@@ -164,9 +164,9 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     getUserSession: (
       context: TContext,
-    ): ResultAsync<UserSessionPayload | null, SuperAuthError> => {
+    ): ResultAsync<UserSession | null, LucidAuthError> => {
       return sessionService.getSession(context).mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -182,7 +182,7 @@ export function createAuthHelpers<TContext>(
       request: Request,
       context: TContext,
       providerId: AuthProviderId,
-    ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> => {
+    ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> => {
       const providerResult = providerRegistry.get(providerId);
 
       if (providerResult.isErr()) {
@@ -197,17 +197,14 @@ export function createAuthHelpers<TContext>(
 
       return safeTry(async function* () {
         // Complete OAuth sign-in
-        const { sessionData, redirectTo } = yield* oauthService.completeSignIn(
+        const { user, redirectTo } = yield* oauthService.completeSignIn(
           request,
           context,
           provider,
         );
 
         // Create session
-        const session = yield* sessionService.createSession(
-          sessionData,
-          provider.id,
-        );
+        const session = yield* sessionService.createSession(user, provider.id);
 
         // Save session cookie
         yield* userSessionStorage.saveSession(context, session);
@@ -217,7 +214,7 @@ export function createAuthHelpers<TContext>(
 
         return ok({ redirectTo });
       }).mapErr((error) => {
-        if (error instanceof SuperAuthError) {
+        if (error instanceof LucidAuthError) {
           return error;
         }
         return new UnknownError({
@@ -231,14 +228,14 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     handleVerifyEmail: (
       request: Request,
-    ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> => {
+    ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> => {
       return providerRegistry
         .getCredentialProvider()
         .asyncAndThen((provider) => {
           return credentialService.verifyEmail(request, provider);
         })
         .mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({
@@ -253,14 +250,14 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     forgotPassword(
       email: string,
-    ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> {
+    ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
       return providerRegistry
         .getCredentialProvider()
         .asyncAndThen((provider) => {
           return credentialService.forgotPassword(provider, { email });
         })
         .mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({
@@ -277,7 +274,7 @@ export function createAuthHelpers<TContext>(
       request: Request,
     ): ResultAsync<
       { email: string; passwordHash: string; redirectTo: `/${string}` },
-      SuperAuthError
+      LucidAuthError
     > {
       return providerRegistry
         .getCredentialProvider()
@@ -285,7 +282,7 @@ export function createAuthHelpers<TContext>(
           return credentialService.verifyPasswordResetToken(request, provider);
         })
         .mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({
@@ -300,7 +297,7 @@ export function createAuthHelpers<TContext>(
     handleResetPassword: (
       token: string,
       newPassword: string,
-    ): ResultAsync<{ redirectTo: `/${string}` }, SuperAuthError> => {
+    ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> => {
       return providerRegistry
         .getCredentialProvider()
         .asyncAndThen((provider) => {
@@ -309,7 +306,7 @@ export function createAuthHelpers<TContext>(
           });
         })
         .mapErr((error) => {
-          if (error instanceof SuperAuthError) {
+          if (error instanceof LucidAuthError) {
             return error;
           }
           return new UnknownError({

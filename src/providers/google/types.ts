@@ -1,4 +1,4 @@
-import type { UserSession } from '../../core/session/types.js';
+import type { User } from '../../core/session/types.js';
 
 export interface GoogleUserClaims {
   aud: string;
@@ -47,5 +47,5 @@ export interface GoogleProviderConfig {
    * @param userClaims - The profile information returned by Google.
    * @returns The object you return becomes the user session.
    */
-  onAuthenticated(userClaims: GoogleUserClaims): Promise<UserSession>;
+  onAuthenticated(userClaims: GoogleUserClaims): Promise<User>;
 }

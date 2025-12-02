@@ -1,4 +1,4 @@
-import type { UserSession } from '../../core/session/types';
+import type { User } from '../../core/session/types';
 
 export interface CredentialProviderConfig {
   onSignUp: {
@@ -86,7 +86,7 @@ export interface CredentialProviderConfig {
    */
   onSignIn(params: {
     email: string;
-  }): Promise<(UserSession & { hashedPassword: string }) | null>;
+  }): Promise<(User & { hashedPassword: string }) | null>;
 
   onPasswordReset: {
     /**

@@ -6,7 +6,7 @@ import { redirect as nextRedirect } from 'next/navigation';
 import { COOKIE_NAMES, OAUTH_STATE_MAX_AGE } from '../core/constants.js';
 import type { ResultAsync } from 'neverthrow';
 import type { LucidAuthError } from '../core/errors.js';
-import type { UserSessionPayload } from '../core/session/types.js';
+import type { UserSession } from '../core/session/types.js';
 import type {
   CredentialSignInOptions,
   CredentialSignInResult,
@@ -40,7 +40,7 @@ interface AuthInstance {
     [key: string]: unknown;
   }) => Promise<void>;
   signOut: () => Promise<void>;
-  getUserSession: () => Promise<UserSessionPayload | null>;
+  getUserSession: () => Promise<UserSession | null>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   handler: (request: Request) => Promise<void>;

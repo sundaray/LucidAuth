@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../errors.js';
+import { LucidAuthError } from '../errors.js';
 
-export class AuthorizationCodeNotFoundError extends SuperAuthError {
+export class AuthorizationCodeNotFoundError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Missing authorization code in URL.',
@@ -10,7 +10,7 @@ export class AuthorizationCodeNotFoundError extends SuperAuthError {
   }
 }
 
-export class StateNotFoundError extends SuperAuthError {
+export class StateNotFoundError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Missing state in URL.',
@@ -20,7 +20,7 @@ export class StateNotFoundError extends SuperAuthError {
   }
 }
 
-export class OAuthStateCookieNotFoundError extends SuperAuthError {
+export class OAuthStateCookieNotFoundError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'OAuth state cookie not found',
@@ -30,7 +30,7 @@ export class OAuthStateCookieNotFoundError extends SuperAuthError {
   }
 }
 
-export class StateMismatchError extends SuperAuthError {
+export class StateMismatchError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'State parameter mismatch.',
@@ -40,7 +40,7 @@ export class StateMismatchError extends SuperAuthError {
   }
 }
 
-export class InvalidTokenPayloadError extends SuperAuthError {
+export class InvalidTokenPayloadError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Invalid token payload.',
@@ -50,7 +50,7 @@ export class InvalidTokenPayloadError extends SuperAuthError {
   }
 }
 
-export class EncryptOAuthStatePayloadError extends SuperAuthError {
+export class EncryptOAuthStatePayloadError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to encrypt OAuth state payload.',
@@ -60,7 +60,7 @@ export class EncryptOAuthStatePayloadError extends SuperAuthError {
   }
 }
 
-export class CreateAuthorizationUrlError extends SuperAuthError {
+export class CreateAuthorizationUrlError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to create authorization URL.',
@@ -70,7 +70,7 @@ export class CreateAuthorizationUrlError extends SuperAuthError {
   }
 }
 
-export class DecryptOAuthStateJweError extends SuperAuthError {
+export class DecryptOAuthStateJweError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to decrypt OAuth state JWE',
@@ -80,7 +80,7 @@ export class DecryptOAuthStateJweError extends SuperAuthError {
   }
 }
 
-export class ProviderNotFoundError extends SuperAuthError {
+export class ProviderNotFoundError extends LucidAuthError {
   constructor(options: { providerId: string; cause?: unknown }) {
     super({
       message: `'${options.providerId}' provider was not found.`,
@@ -90,7 +90,7 @@ export class ProviderNotFoundError extends SuperAuthError {
   }
 }
 
-export class InvalidProviderTypeError extends SuperAuthError {
+export class InvalidProviderTypeError extends LucidAuthError {
   constructor(options: { providerId: string; cause?: unknown }) {
     super({
       message: `'${options.providerId}' provider type is not supported.`,
