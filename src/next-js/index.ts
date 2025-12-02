@@ -1,7 +1,7 @@
 import { createAuthHelpers } from '../core/auth.js';
 import { NextJsSessionStorage } from './session-storage.js';
 import { createExtendUserSessionMiddleware } from './middleware.js';
-import type { AuthConfig } from '../types/index.js';
+import type { AuthConfig, SignOutOptions } from '../types/index.js';
 import { redirect as nextRedirect } from 'next/navigation';
 import { COOKIE_NAMES, OAUTH_STATE_MAX_AGE } from '../core/constants.js';
 import type { ResultAsync } from 'neverthrow';
@@ -39,7 +39,7 @@ interface AuthInstance {
     password: string;
     [key: string]: unknown;
   }) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (options: SignOutOptions) => Promise<void>;
   getUserSession: () => Promise<UserSession | null>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
@@ -123,8 +123,10 @@ export function createAuthInstance(config: AuthConfig): AuthInstance {
       nextRedirect(redirectTo);
     },
 
-    signOut: async () => {
-      const { redirectTo } = await unwrap(authHelpers.signOut(undefined));
+    signOut: async (options: SignOutOptions) => {
+      const { redirectTo } = await unwrap(
+        authHelpers.signOut(undefined, options),
+      );
       nextRedirect(redirectTo);
     },
 

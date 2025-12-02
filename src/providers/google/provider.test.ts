@@ -253,7 +253,9 @@ describe('GoogleProvider', () => {
         const result = await provider.onAuthenticated(mockUserClaims);
 
         expect(result.isErr()).toBe(true);
-        expect(result._unsafeUnwrapErr().name).toBe('CallbackError');
+        expect(result._unsafeUnwrapErr().name).toBe(
+          'OnAuthenticatedCallbackError',
+        );
       });
     });
   });

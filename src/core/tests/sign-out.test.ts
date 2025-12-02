@@ -59,10 +59,12 @@ describe('signout', () => {
   test('should return redirectTo "/" on successful sign out', async () => {
     mockSessionService.deleteSession.mockReturnValue(okAsync(undefined));
 
-    const result = await authHelpers.signOut(testContext);
+    const result = await authHelpers.signOut(testContext, {
+      redirectTo: '/login',
+    });
 
     expect(result.isOk()).toBe(true);
-    expect(result._unsafeUnwrap()).toEqual({ redirectTo: '/' });
+    expect(result._unsafeUnwrap()).toEqual({ redirectTo: '/login' });
   });
 
   test('should pass through LucidAuthError from sessionService.deleteSession', async () => {
@@ -72,7 +74,9 @@ describe('signout', () => {
 
     mockSessionService.deleteSession.mockReturnValue(errAsync(deleteError));
 
-    const result = await authHelpers.signOut(testContext);
+    const result = await authHelpers.signOut(testContext, {
+      redirectTo: '/',
+    });
 
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr()).toBe(deleteError);
@@ -83,7 +87,9 @@ describe('signout', () => {
 
     mockSessionService.deleteSession.mockReturnValue(errAsync(unknownError));
 
-    const result = await authHelpers.signOut(testContext);
+    const result = await authHelpers.signOut(testContext, {
+      redirectTo: '/',
+    });
 
     expect(result.isErr()).toBe(true);
 

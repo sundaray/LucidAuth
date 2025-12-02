@@ -77,7 +77,7 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
     const value = result._unsafeUnwrap();
     expect(value.email).toBe('');
     expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=invalid_password_reset_token_error`,
+      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=password_reset_token_not_found_error`,
     );
   });
 
@@ -93,7 +93,7 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
     const value = result._unsafeUnwrap();
     expect(value.email).toBe('');
     expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=invalid_password_reset_token_error`,
+      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=password_reset_token_not_found_error`,
     );
   });
 

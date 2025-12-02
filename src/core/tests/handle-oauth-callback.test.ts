@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { ok, err, okAsync, errAsync } from 'neverthrow';
+import { ok, okAsync, errAsync } from 'neverthrow';
 import { createAuthHelpers } from '../auth';
 import {
   mockConfig,
@@ -12,13 +12,9 @@ import {
   createMockCredentialService,
   createMockSessionService,
   createMockSessionStorage,
-  mockUserSessionData,
+  mockUser,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../errors';
-import {
-  ProviderNotFoundError,
-  InvalidProviderTypeError,
-} from '../oauth/errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 // ============================================
 // MOCK SERVICE MODULES
@@ -71,7 +67,7 @@ describe('handleResetPassword', () => {
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: expectedRedirect,
       }),
     );
@@ -95,7 +91,7 @@ describe('handleResetPassword', () => {
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: '/dashboard',
       }),
     );
@@ -116,7 +112,7 @@ describe('handleResetPassword', () => {
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: '/dashboard',
       }),
     );
@@ -127,7 +123,7 @@ describe('handleResetPassword', () => {
     await authHelpers.handleOAuthCallback(mockRequest, testContext, 'google');
 
     expect(mockSessionService.createSession).toHaveBeenCalledWith(
-      mockUserSessionData,
+      mockUser,
       'google',
     );
   });
@@ -138,7 +134,7 @@ describe('handleResetPassword', () => {
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: '/dashboard',
       }),
     );
@@ -153,8 +149,8 @@ describe('handleResetPassword', () => {
       sessionJWE,
     );
   });
-  test('should pass through SuperAuthError from oauthService.completeSignIn', async () => {
-    const oauthError = new SuperAuthError({
+  test('should pass through LucidAuthError from oauthService.completeSignIn', async () => {
+    const oauthError = new LucidAuthError({
       message: 'Failed to complete OAuth',
     });
 
@@ -190,15 +186,15 @@ describe('handleResetPassword', () => {
     expect(error.cause).toBe(unknownError);
   });
 
-  test('should pass through SuperAuthError from sessionService.createSession', async () => {
-    const sessionError = new SuperAuthError({
+  test('should pass through LucidAuthError from sessionService.createSession', async () => {
+    const sessionError = new LucidAuthError({
       message: 'Failed to create session',
     });
 
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: '/dashboard',
       }),
     );
@@ -214,15 +210,15 @@ describe('handleResetPassword', () => {
     expect(result._unsafeUnwrapErr()).toBe(sessionError);
   });
 
-  test('should pass through SuperAuthError from userSessionStorage.saveSession', async () => {
-    const storageError = new SuperAuthError({
+  test('should pass through LucidAuthError from userSessionStorage.saveSession', async () => {
+    const storageError = new LucidAuthError({
       message: 'Failed to save user session',
     });
 
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: '/dashboard',
       }),
     );
@@ -239,15 +235,15 @@ describe('handleResetPassword', () => {
     expect(result._unsafeUnwrapErr()).toBe(storageError);
   });
 
-  test('should pass through SuperAuthError from oauthSessionStorage.deleteSession', async () => {
-    const deleteError = new SuperAuthError({
+  test('should pass through LucidAuthError from oauthSessionStorage.deleteSession', async () => {
+    const deleteError = new LucidAuthError({
       message: 'Failed to delete OAuth state',
     });
 
     mockProviderRegistry.get.mockReturnValue(ok(mockOAuthProvider));
     mockOAuthService.completeSignIn.mockReturnValue(
       okAsync({
-        sessionData: mockUserSessionData,
+        user: mockUser,
         redirectTo: '/dashboard',
       }),
     );

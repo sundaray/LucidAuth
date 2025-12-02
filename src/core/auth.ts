@@ -1,4 +1,4 @@
-import type { AuthConfig } from '../types/index.js';
+import type { AuthConfig, SignOutOptions } from '../types/index.js';
 import type { SessionStorage, UserSession } from './session/types';
 import type { AnyAuthProvider, AuthProviderId } from '../providers/types';
 import { ok, ResultAsync, errAsync, safeTry } from 'neverthrow';
@@ -145,10 +145,11 @@ export function createAuthHelpers<TContext>(
     // --------------------------------------------
     signOut: (
       context: TContext,
+      options: SignOutOptions,
     ): ResultAsync<{ redirectTo: string }, LucidAuthError> => {
       return sessionService
         .deleteSession(context)
-        .map(() => ({ redirectTo: '/' }))
+        .map(() => ({ redirectTo: options.redirectTo }))
         .mapErr((error) => {
           if (error instanceof LucidAuthError) {
             return error;

@@ -3,7 +3,7 @@ import type { OAuthProvider, CredentialProvider } from '../../providers/types';
 import type { CredentialProviderConfig } from '../../providers/credential/types';
 import type { AuthConfig } from '../../types';
 import type { SessionStorage } from '../session/types';
-import type { UserSessionPayload } from '../session/types';
+import type { User, UserSessionPayload } from '../session/types';
 
 // ============================================
 // MOCK CONFIG
@@ -139,7 +139,7 @@ export const mockUserSessionPayload: UserSessionPayload = {
   provider: 'google',
 };
 
-export const mockUserSessionData = {
+export const mockUser: User = {
   id: 'user-123',
   email: 'test@example.com',
   name: 'Test User',

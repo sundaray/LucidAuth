@@ -3,7 +3,6 @@ import { ok, err, okAsync, errAsync } from 'neverthrow';
 import { createAuthHelpers } from '../auth';
 import {
   mockConfig,
-  testContext,
   type TestContext,
   createMockOAuthProvider,
   createMockCredentialProvider,
@@ -13,7 +12,7 @@ import {
   createMockSessionService,
   createMockSessionStorage,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 // ============================================
 // MOCK SERVICE MODULES
@@ -92,8 +91,8 @@ describe('handleVerifyEmail', () => {
     );
   });
 
-  test('should pass through SuperAuthError from getCredentialProvider', async () => {
-    const providerError = new SuperAuthError({
+  test('should pass through LucidAuthError from getCredentialProvider', async () => {
+    const providerError = new LucidAuthError({
       message: 'No credential provider configured',
     });
 
@@ -107,8 +106,8 @@ describe('handleVerifyEmail', () => {
     expect(result._unsafeUnwrapErr()).toBe(providerError);
   });
 
-  test('should pass through SuperAuthError from credentialService.verifyEmail', async () => {
-    const verifyError = new SuperAuthError({
+  test('should pass through LucidAuthError from credentialService.verifyEmail', async () => {
+    const verifyError = new LucidAuthError({
       message: 'Verification token is invalid or expired',
     });
 

@@ -14,7 +14,7 @@ import {
   createMockSessionStorage,
   mockUserSessionPayload,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 // ============================================
 // MOCK SERVICE MODULES
@@ -77,8 +77,8 @@ describe('handleResetPassword', () => {
     expect(result._unsafeUnwrap()).toBeNull();
   });
 
-  test('should pass through SuperAuthError from sessionService.getSession', async () => {
-    const sessionError = new SuperAuthError({
+  test('should pass through LucidAuthError from sessionService.getSession', async () => {
+    const sessionError = new LucidAuthError({
       message: 'Failed to decrypt session',
     });
 

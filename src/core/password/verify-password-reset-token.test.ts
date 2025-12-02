@@ -11,7 +11,6 @@ describe('verifyPasswordResetToken', () => {
 
   const mockPayload = {
     email: 'test@example.com',
-    passwordHash: 'hashed-password-value',
   };
 
   // Helper to create a valid token for testing
@@ -38,7 +37,6 @@ describe('verifyPasswordResetToken', () => {
 
     const payload = result._unsafeUnwrap();
     expect(payload.email).toBe(mockPayload.email);
-    expect(payload.passwordHash).toBe(mockPayload.passwordHash);
   });
 
   test('should return payload with correct types', async () => {
@@ -50,7 +48,6 @@ describe('verifyPasswordResetToken', () => {
 
     const payload = result._unsafeUnwrap();
     expect(typeof payload.email).toBe('string');
-    expect(typeof payload.passwordHash).toBe('string');
   });
 
   // ============================================

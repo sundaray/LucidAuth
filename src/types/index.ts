@@ -1,7 +1,11 @@
 import type { AnyAuthProvider } from '../providers/types.js';
 
 export interface SignInOptions {
-  redirectTo?: `/${string}`;
+  redirectTo: `/${string}`;
+}
+
+export interface SignOutOptions {
+  redirectTo: `/${string}`;
 }
 
 export interface AuthConfig {

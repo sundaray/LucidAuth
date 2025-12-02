@@ -83,7 +83,7 @@ describe('CredentialProvider.signUp', () => {
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
       email: testUserData.email,
-      redirectTo: mockConfig.onSignUp.redirects.checkEmail,
+      redirectTo: mockConfig.onSignUp.redirects.signUpSuccess,
     });
   });
 

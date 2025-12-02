@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../errors.js';
+import { LucidAuthError } from '../errors.js';
 
-export class DeleteOauthStateCookieError extends SuperAuthError {
+export class DeleteOauthStateCookieError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown }) {
     super({
       message: options.message || 'Failed to delete the OAuth state cookie.',
@@ -10,7 +10,7 @@ export class DeleteOauthStateCookieError extends SuperAuthError {
   }
 }
 
-export class EncryptUserSessionPayloadError extends SuperAuthError {
+export class EncryptUserSessionPayloadError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to encrypt user session payload.',
@@ -20,7 +20,7 @@ export class EncryptUserSessionPayloadError extends SuperAuthError {
   }
 }
 
-export class DecryptUserSessionError extends SuperAuthError {
+export class DecryptUserSessionError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to decrypt user session JWE.',
@@ -30,7 +30,7 @@ export class DecryptUserSessionError extends SuperAuthError {
   }
 }
 
-export class RunOAuthProviderSignInCallbackError extends SuperAuthError {
+export class RunOAuthProviderSignInCallbackError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message:
@@ -41,7 +41,7 @@ export class RunOAuthProviderSignInCallbackError extends SuperAuthError {
   }
 }
 
-export class CreateUserSessionPayloadError extends SuperAuthError {
+export class CreateUserSessionPayloadError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to create user session payload.',
@@ -51,7 +51,7 @@ export class CreateUserSessionPayloadError extends SuperAuthError {
   }
 }
 
-export class OnSignInCallbackError extends SuperAuthError {
+export class OnSignInCallbackError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'User onSignIn callback failed to execute.',
@@ -61,7 +61,7 @@ export class OnSignInCallbackError extends SuperAuthError {
   }
 }
 
-export class SetUserSessionCookieError extends SuperAuthError {
+export class SetUserSessionCookieError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to set the user session cookie.',
@@ -71,7 +71,7 @@ export class SetUserSessionCookieError extends SuperAuthError {
   }
 }
 
-export class GetUserSessionError extends SuperAuthError {
+export class GetUserSessionError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to get user session.',
@@ -81,7 +81,7 @@ export class GetUserSessionError extends SuperAuthError {
   }
 }
 
-export class SaveUserSessionError extends SuperAuthError {
+export class SaveUserSessionError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to save user session.',
@@ -91,7 +91,7 @@ export class SaveUserSessionError extends SuperAuthError {
   }
 }
 
-export class DeleteUserSessionError extends SuperAuthError {
+export class DeleteUserSessionError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to delete user session.',

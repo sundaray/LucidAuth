@@ -3,7 +3,6 @@ import { ok, err, okAsync, errAsync } from 'neverthrow';
 import { createAuthHelpers } from '../auth';
 import {
   mockConfig,
-  testContext,
   type TestContext,
   createMockOAuthProvider,
   createMockCredentialProvider,
@@ -13,7 +12,7 @@ import {
   createMockSessionService,
   createMockSessionStorage,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../errors';
+import { LucidAuthError, UnknownError } from '../errors';
 
 // ============================================
 // MOCK SERVICE MODULES
@@ -95,8 +94,8 @@ describe('handleResetPassword', () => {
     );
   });
 
-  test('should pass through SuperAuthError from getCredentialProvider', async () => {
-    const getCredentialProviderError = new SuperAuthError({
+  test('should pass through LucidAuthError from getCredentialProvider', async () => {
+    const getCredentialProviderError = new LucidAuthError({
       message: 'No credential provider configured',
     });
 
@@ -113,8 +112,8 @@ describe('handleResetPassword', () => {
     expect(result._unsafeUnwrapErr()).toBe(getCredentialProviderError);
   });
 
-  test('should pass through SuperAuthError from credentialService.resetPassword', async () => {
-    const resetPasswordError = new SuperAuthError({
+  test('should pass through LucidAuthError from credentialService.resetPassword', async () => {
+    const resetPasswordError = new LucidAuthError({
       message: 'Failed to reset password',
     });
 

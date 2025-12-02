@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../errors';
+import { LucidAuthError } from '../errors';
 
-export class GenerateStateError extends SuperAuthError {
+export class GenerateStateError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to generate state.',
@@ -10,7 +10,7 @@ export class GenerateStateError extends SuperAuthError {
   }
 }
 
-export class GenerateCodeVerifierError extends SuperAuthError {
+export class GenerateCodeVerifierError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to generate code verifier.',
@@ -20,7 +20,7 @@ export class GenerateCodeVerifierError extends SuperAuthError {
   }
 }
 
-export class GenerateCodeChallengeError extends SuperAuthError {
+export class GenerateCodeChallengeError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to generate code challenge.',

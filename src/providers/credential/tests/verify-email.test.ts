@@ -3,8 +3,8 @@ import { okAsync, errAsync } from 'neverthrow';
 import { CredentialProvider } from '../provider';
 import {
   testSecret,
-  mockHashedPassword,
   createMockRequest,
+  mockHashedPassword,
   createMockCredentialProviderConfig,
   type MockCredentialProviderConfig,
 } from './setup';
@@ -69,7 +69,7 @@ describe('CredentialProvider.verifyEmail', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=invalid_email_verification_token_error`,
+      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=email_verification_token_not_found_error`,
     );
   });
 
@@ -84,7 +84,7 @@ describe('CredentialProvider.verifyEmail', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=invalid_email_verification_token_error`,
+      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=email_verification_token_not_found_error`,
     );
   });
 
@@ -126,7 +126,7 @@ describe('CredentialProvider.verifyEmail', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=callback_error`,
+      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=on_sign_up_create_user_callback_error`,
     );
   });
 

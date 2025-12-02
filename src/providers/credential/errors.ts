@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../../core/errors.js';
+import { LucidAuthError } from '../../core/errors.js';
 
-export class AccountNotFoundError extends SuperAuthError {
+export class AccountNotFoundError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message:
@@ -11,7 +11,7 @@ export class AccountNotFoundError extends SuperAuthError {
   }
 }
 
-export class InvalidCredentialsError extends SuperAuthError {
+export class InvalidCredentialsError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Invalid email or password.',
@@ -21,7 +21,7 @@ export class InvalidCredentialsError extends SuperAuthError {
   }
 }
 
-export class AccountAlreadyExistsError extends SuperAuthError {
+export class AccountAlreadyExistsError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'An account with this email already exists.',
