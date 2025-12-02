@@ -78,13 +78,10 @@ export const testUserDataWithAdditionalFields = {
   company: 'Acme Corp',
 };
 
-export const mockHashedPassword = 'hashed-password-value';
-
 export const mockUserSession = {
   id: 'user-123',
   email: 'test@example.com',
   name: 'Test User',
-  hashedPassword: mockHashedPassword,
 };
 
 export const mockToken = 'mock-jwt-token-value';

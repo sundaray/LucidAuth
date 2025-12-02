@@ -10,4 +10,5 @@ export {
   ExpiredEmailVerificationTokenError,
   InvalidEmailVerificationTokenError,
   BuildEmailVerificationUrlError,
+  EmailVerificationTokenNotFoundError,
 } from './errors.js';

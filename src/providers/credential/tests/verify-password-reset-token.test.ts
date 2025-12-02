@@ -4,7 +4,6 @@ import { CredentialProvider } from '../provider';
 import {
   createMockCredentialProviderConfig,
   testSecret,
-  mockHashedPassword,
   mockToken,
   createMockRequest,
   type MockCredentialProviderConfig,
@@ -37,7 +36,6 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
 
   const mockTokenPayload = {
     email: testEmail,
-    passwordHash: mockHashedPassword,
   };
 
   beforeEach(() => {
@@ -46,7 +44,7 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
     provider = new CredentialProvider(mockConfig);
   });
 
-  test('should return email, passwordHash, and redirectTo on successful verification', async () => {
+  test('should return email and redirectTo on successful verification', async () => {
     const request = createMockRequest(
       `https://myapp.com/api/auth/verify-password-reset-token?token=${mockToken}`,
     );
@@ -54,10 +52,6 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
     vi.mocked(verifyPasswordResetToken).mockReturnValue(
       okAsync(mockTokenPayload),
     );
-    mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
-      exists: true,
-      passwordHash: mockHashedPassword,
-    });
 
     const result = await provider.verifyPasswordResetToken(request, testSecret);
 
@@ -65,9 +59,8 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.email).toBe(testEmail);
-    expect(value.passwordHash).toBe(mockHashedPassword);
     expect(value.redirectTo).toContain(
-      mockConfig.onPasswordReset.redirects.resetForm,
+      mockConfig.onPasswordReset.redirects.tokenVerificationSuccess,
     );
     expect(value.redirectTo).toContain(`token=${mockToken}`);
   });
@@ -83,9 +76,8 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.email).toBe('');
-    expect(value.passwordHash).toBe('');
     expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.resetPasswordError}?error=invalid_password_reset_token_error`,
+      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=invalid_password_reset_token_error`,
     );
   });
 
@@ -100,9 +92,8 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.email).toBe('');
-    expect(value.passwordHash).toBe('');
     expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.resetPasswordError}?error=invalid_password_reset_token_error`,
+      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=invalid_password_reset_token_error`,
     );
   });
 
@@ -122,58 +113,8 @@ describe('CredentialProvider.verifyPasswordResetToken', () => {
 
     const value = result._unsafeUnwrap();
     expect(value.email).toBe('');
-    expect(value.passwordHash).toBe('');
     expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.resetPasswordError}?error=invalid_password_reset_token_error`,
-    );
-  });
-
-  test('should append password_reset_token_already_used_error to redirect URL when password was already changed', async () => {
-    const request = createMockRequest(
-      `https://myapp.com/api/auth/verify-password-reset-token?token=${mockToken}`,
-    );
-
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-    mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
-      exists: true,
-      passwordHash: 'different-password-hash', // Different from token
-    });
-
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
-
-    expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.email).toBe('');
-    expect(value.passwordHash).toBe('');
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.resetPasswordError}?error=password_reset_token_already_used_error`,
-    );
-  });
-
-  test('should append callback_error to redirect URL when checkUserExists throws', async () => {
-    const request = createMockRequest(
-      `https://myapp.com/api/auth/verify-password-reset-token?token=${mockToken}`,
-    );
-
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-
-    const callbackError = new Error('Database unavailable');
-    mockConfig.onPasswordReset.checkUserExists.mockRejectedValue(callbackError);
-
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
-
-    expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.email).toBe('');
-    expect(value.passwordHash).toBe('');
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.resetPasswordError}?error=callback_error`,
+      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=invalid_password_reset_token_error`,
     );
   });
 

@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../errors';
+import { LucidAuthError } from '../errors';
 
-export class HashPasswordError extends SuperAuthError {
+export class HashPasswordError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to hash password',
@@ -10,7 +10,7 @@ export class HashPasswordError extends SuperAuthError {
   }
 }
 
-export class VerifyPasswordError extends SuperAuthError {
+export class VerifyPasswordError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to verify password',
@@ -20,7 +20,7 @@ export class VerifyPasswordError extends SuperAuthError {
   }
 }
 
-export class InvalidPasswordHashFormatError extends SuperAuthError {
+export class InvalidPasswordHashFormatError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Invalid password hash format.',
@@ -29,7 +29,7 @@ export class InvalidPasswordHashFormatError extends SuperAuthError {
     this.name = 'InvalidPasswordHashFormatError';
   }
 }
-export class GeneratePasswordResetTokenError extends SuperAuthError {
+export class GeneratePasswordResetTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to generate password reset token.',
@@ -39,7 +39,7 @@ export class GeneratePasswordResetTokenError extends SuperAuthError {
   }
 }
 
-export class BuildPasswordResetUrlError extends SuperAuthError {
+export class BuildPasswordResetUrlError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to build password reset URL.',
@@ -49,7 +49,16 @@ export class BuildPasswordResetUrlError extends SuperAuthError {
   }
 }
 
-export class InvalidPasswordResetTokenError extends SuperAuthError {
+export class PasswordResetTokenNotFoundError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'Password reset token not found.',
+      cause: options.cause,
+    });
+    this.name = 'PasswordResetTokenNotFoundError';
+  }
+}
+export class InvalidPasswordResetTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Invalid password reset token.',
@@ -59,32 +68,12 @@ export class InvalidPasswordResetTokenError extends SuperAuthError {
   }
 }
 
-export class PasswordResetTokenAlreadyUsedError extends SuperAuthError {
-  constructor(options: { message?: string; cause?: unknown } = {}) {
-    super({
-      message: options.message || 'Password reset token has already been used.',
-      cause: options.cause,
-    });
-    this.name = 'PasswordResetTokenAlreadyUsedError';
-  }
-}
-
-export class VerifyPasswordResetTokenError extends SuperAuthError {
+export class VerifyPasswordResetTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to verify password reset token.',
       cause: options.cause,
     });
     this.name = 'VerifyPasswordResetTokenError';
-  }
-}
-
-export class UserNotFoundError extends SuperAuthError {
-  constructor(options: { message?: string; cause?: unknown } = {}) {
-    super({
-      message: options.message || 'User not found.',
-      cause: options.cause,
-    });
-    this.name = 'UserNotFoundError';
   }
 }

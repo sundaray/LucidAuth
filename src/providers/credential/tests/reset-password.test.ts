@@ -1,18 +1,13 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { okAsync, errAsync } from 'neverthrow';
+import { okAsync } from 'neverthrow';
 import { CredentialProvider } from '../provider';
 import {
   createMockCredentialProviderConfig,
   testSecret,
-  mockHashedPassword,
   mockToken,
   type MockCredentialProviderConfig,
 } from './setup';
-import {
-  CallbackError,
-  SuperAuthError,
-  UnknownError,
-} from '../../../core/errors';
+import { CallbackError } from '../../../core/errors';
 import type { PasswordHash } from '../../../core/password/types';
 
 // ============================================
@@ -37,11 +32,7 @@ vi.mock('../../../core/password/hash', async (importOriginal) => {
   };
 });
 
-import {
-  verifyPasswordResetToken,
-  PasswordResetTokenAlreadyUsedError,
-  UserNotFoundError,
-} from '../../../core/password';
+import { verifyPasswordResetToken } from '../../../core/password';
 import { hashPassword } from '../../../core/password/hash';
 
 describe('CredentialProvider.resetPassword', () => {
@@ -54,7 +45,6 @@ describe('CredentialProvider.resetPassword', () => {
 
   const mockTokenPayload = {
     email: testEmail,
-    passwordHash: mockHashedPassword,
   };
 
   beforeEach(() => {
@@ -67,10 +57,6 @@ describe('CredentialProvider.resetPassword', () => {
     vi.mocked(verifyPasswordResetToken).mockReturnValue(
       okAsync(mockTokenPayload),
     );
-    mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
-      exists: true,
-      passwordHash: mockHashedPassword,
-    });
     vi.mocked(hashPassword).mockReturnValue(
       okAsync(newHashedPassword as PasswordHash),
     );
@@ -91,34 +77,30 @@ describe('CredentialProvider.resetPassword', () => {
     });
   });
 
-  test('should return CallbackError when checkUserExists throws', async () => {
+  test('should call updatePassword with correct email and hashed password', async () => {
     vi.mocked(verifyPasswordResetToken).mockReturnValue(
       okAsync(mockTokenPayload),
     );
-
-    const callbackError = new Error('Database connection failed');
-    mockConfig.onPasswordReset.checkUserExists.mockRejectedValue(callbackError);
-
-    const result = await provider.resetPassword(
-      mockToken,
-      { newPassword },
-      testSecret,
+    vi.mocked(hashPassword).mockReturnValue(
+      okAsync(newHashedPassword as PasswordHash),
+    );
+    mockConfig.onPasswordReset.updatePassword.mockResolvedValue(undefined);
+    mockConfig.onPasswordReset.sendPasswordUpdateEmail.mockResolvedValue(
+      undefined,
     );
 
-    expect(result.isErr()).toBe(true);
+    await provider.resetPassword(mockToken, { newPassword }, testSecret);
 
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+    expect(mockConfig.onPasswordReset.updatePassword).toHaveBeenCalledWith({
+      email: testEmail,
+      hashedPassword: newHashedPassword,
+    });
   });
 
   test('should return CallbackError when updatePassword throws', async () => {
     vi.mocked(verifyPasswordResetToken).mockReturnValue(
       okAsync(mockTokenPayload),
     );
-    mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
-      exists: true,
-      passwordHash: mockHashedPassword,
-    });
     vi.mocked(hashPassword).mockReturnValue(
       okAsync(newHashedPassword as PasswordHash),
     );
@@ -138,14 +120,10 @@ describe('CredentialProvider.resetPassword', () => {
     expect(error).toBeInstanceOf(CallbackError);
   });
 
-  test('should return CallbackError when sendPasswordUpdatedEmail throws', async () => {
+  test('should return CallbackError when sendPasswordUpdateEmail throws', async () => {
     vi.mocked(verifyPasswordResetToken).mockReturnValue(
       okAsync(mockTokenPayload),
     );
-    mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
-      exists: true,
-      passwordHash: mockHashedPassword,
-    });
     vi.mocked(hashPassword).mockReturnValue(
       okAsync(newHashedPassword as PasswordHash),
     );

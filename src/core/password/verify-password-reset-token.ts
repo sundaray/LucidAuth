@@ -5,7 +5,6 @@ import { VerifyPasswordResetTokenError } from './errors';
 
 interface PasswordResetTokenPayload {
   email: string;
-  passwordHash: string;
 }
 
 export function verifyPasswordResetToken(

@@ -3,7 +3,6 @@ export { generatePasswordResetToken } from './generate-password-reset-token';
 export { verifyPasswordResetToken } from './verify-password-reset-token';
 
 export {
+  PasswordResetTokenNotFoundError,
   InvalidPasswordResetTokenError,
-  PasswordResetTokenAlreadyUsedError,
-  UserNotFoundError,
 } from './errors';

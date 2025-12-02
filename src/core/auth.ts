@@ -273,7 +273,7 @@ export function createAuthHelpers<TContext>(
     handleVerifyPasswordResetToken(
       request: Request,
     ): ResultAsync<
-      { email: string; passwordHash: string; redirectTo: `/${string}` },
+      { email: string; redirectTo: `/${string}` },
       LucidAuthError
     > {
       return providerRegistry

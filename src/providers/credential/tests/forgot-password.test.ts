@@ -5,7 +5,6 @@ import {
   createMockCredentialProviderConfig,
   testSecret,
   testBaseUrl,
-  mockHashedPassword,
   mockToken,
   mockPasswordResetUrl,
   type MockCredentialProviderConfig,
@@ -50,7 +49,6 @@ describe('CredentialProvider.forgotPassword', () => {
   test('should return redirectTo on successful forgot password request', async () => {
     mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
       exists: true,
-      passwordHash: mockHashedPassword,
     });
     vi.mocked(generatePasswordResetToken).mockReturnValue(
       okAsync(mockToken as PasswordResetToken),
@@ -130,7 +128,6 @@ describe('CredentialProvider.forgotPassword', () => {
 
     mockConfig.onPasswordReset.checkUserExists.mockResolvedValue({
       exists: true,
-      passwordHash: mockHashedPassword,
     });
     vi.mocked(generatePasswordResetToken).mockReturnValue(
       okAsync(mockToken as PasswordResetToken),

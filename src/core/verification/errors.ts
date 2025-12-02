@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../errors.js';
+import { LucidAuthError } from '../errors.js';
 
-export class GenerateEmailVerificationTokenError extends SuperAuthError {
+export class GenerateEmailVerificationTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message:
@@ -11,7 +11,7 @@ export class GenerateEmailVerificationTokenError extends SuperAuthError {
   }
 }
 
-export class VerifyEmailVerificationTokenError extends SuperAuthError {
+export class VerifyEmailVerificationTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to verify email verification token.',
@@ -21,7 +21,7 @@ export class VerifyEmailVerificationTokenError extends SuperAuthError {
   }
 }
 
-export class ExpiredEmailVerificationTokenError extends SuperAuthError {
+export class ExpiredEmailVerificationTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Email verification token has expired.',
@@ -31,7 +31,17 @@ export class ExpiredEmailVerificationTokenError extends SuperAuthError {
   }
 }
 
-export class InvalidEmailVerificationTokenError extends SuperAuthError {
+export class EmailVerificationTokenNotFoundError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'Email verification token not found.',
+      cause: options.cause,
+    });
+    this.name = 'EmailVerificationTokenNotFoundError';
+  }
+}
+
+export class InvalidEmailVerificationTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Invalid email verification token.',
@@ -41,7 +51,7 @@ export class InvalidEmailVerificationTokenError extends SuperAuthError {
   }
 }
 
-export class BuildEmailVerificationUrlError extends SuperAuthError {
+export class BuildEmailVerificationUrlError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to build email verification URL.',

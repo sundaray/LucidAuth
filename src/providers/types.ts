@@ -57,10 +57,7 @@ export interface CredentialProvider {
   verifyPasswordResetToken(
     request: Request,
     secret: string,
-  ): ResultAsync<
-    { email: string; passwordHash: string; redirectTo: `/${string}` },
-    LucidAuthError
-  >;
+  ): ResultAsync<{ email: string; redirectTo: `/${string}` }, LucidAuthError>;
   resetPassword(
     token: string,
     data: { newPassword: string },

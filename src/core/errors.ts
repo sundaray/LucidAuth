@@ -17,7 +17,13 @@ export class CallbackError extends LucidAuthError {
         `User callback '${options.callback}' failed to execute.`,
       cause: options.cause,
     });
-    this.name = 'CallbackError';
+    // "onSignUp.checkUserExists" → "OnSignUpCheckUserExistsCallbackError"
+    // "onPasswordReset.sendPasswordResetEmail" → "OnPasswordResetSendPasswordResetEmailCallbackError"
+    const formattedCallback = options.callback
+      .split('.')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+    this.name = `${formattedCallback}CallbackError`;
   }
 }
 

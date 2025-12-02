@@ -6,7 +6,7 @@ import {
   generateEmailVerificationToken,
   verifyEmailVerificationToken,
   buildEmailVerificationUrl,
-  InvalidEmailVerificationTokenError,
+  EmailVerificationTokenNotFoundError,
 } from '../../core/verification';
 import {
   AccountAlreadyExistsError,
@@ -22,9 +22,7 @@ import {
   generatePasswordResetToken,
   buildPasswordResetUrl,
   verifyPasswordResetToken,
-  InvalidPasswordResetTokenError,
-  PasswordResetTokenAlreadyUsedError,
-  UserNotFoundError,
+  PasswordResetTokenNotFoundError,
 } from '../../core/password';
 
 import { AUTH_ROUTES } from '../../core/constants';
@@ -60,7 +58,10 @@ export class CredentialProvider implements CredentialProviderType {
       const result = yield* ResultAsync.fromPromise(
         config.onSignUp.checkUserExists({ email }),
         (error) =>
-          new CallbackError({ callback: 'checkUserExists', cause: error }),
+          new CallbackError({
+            callback: 'onSignUp.checkUserExists',
+            cause: error,
+          }),
       );
 
       if (result.exists) {
@@ -95,7 +96,7 @@ export class CredentialProvider implements CredentialProviderType {
         }),
         (error) =>
           new CallbackError({
-            callback: 'sendVerificationEmail',
+            callback: 'onSignUp.sendVerificationEmail',
             cause: error,
           }),
       );
@@ -173,7 +174,7 @@ export class CredentialProvider implements CredentialProviderType {
       )();
 
       if (tokenResult.isErr() || !tokenResult.value) {
-        return err(new InvalidEmailVerificationTokenError());
+        return err(new EmailVerificationTokenNotFoundError());
       }
 
       const token = tokenResult.value;
@@ -192,7 +193,7 @@ export class CredentialProvider implements CredentialProviderType {
         }),
         (error) =>
           new CallbackError({
-            callback: 'createUser',
+            callback: 'onSignUp.createUser',
             cause: error,
           }),
       );
@@ -238,7 +239,10 @@ export class CredentialProvider implements CredentialProviderType {
       const result = yield* ResultAsync.fromPromise(
         config.onPasswordReset.checkUserExists({ email }),
         (error) =>
-          new CallbackError({ callback: 'checkUserExists', cause: error }),
+          new CallbackError({
+            callback: 'onPasswordReset.checkUserExists',
+            cause: error,
+          }),
       );
 
       // If user with a credential account doesn't exist, silently succeed
@@ -248,13 +252,10 @@ export class CredentialProvider implements CredentialProviderType {
         });
       }
 
-      // User exists with credential account - we have password hash
-      const { passwordHash } = result;
-
-      // Generate password reset token with email + password hash
+      // Generate password reset token with email
       const token = yield* generatePasswordResetToken({
         secret,
-        payload: { email, passwordHash },
+        payload: { email },
       });
 
       // Build password reset URL using user's configured path
@@ -269,7 +270,7 @@ export class CredentialProvider implements CredentialProviderType {
         config.onPasswordReset.sendPasswordResetEmail({ email, url }),
         (error) =>
           new CallbackError({
-            callback: 'sendPasswordResetEmail',
+            callback: 'onPasswordReset.sendPasswordResetEmail',
             cause: error,
           }),
       );
@@ -294,10 +295,7 @@ export class CredentialProvider implements CredentialProviderType {
   verifyPasswordResetToken(
     request: Request,
     secret: string,
-  ): ResultAsync<
-    { email: string; passwordHash: string; redirectTo: `/${string}` },
-    LucidAuthError
-  > {
+  ): ResultAsync<{ email: string; redirectTo: `/${string}` }, LucidAuthError> {
     const config = this.config;
 
     return safeTry(async function* () {
@@ -307,35 +305,15 @@ export class CredentialProvider implements CredentialProviderType {
       )();
 
       if (tokenResult.isErr() || !tokenResult.value) {
-        return err(new InvalidPasswordResetTokenError());
+        return err(new PasswordResetTokenNotFoundError());
       }
 
       const token = tokenResult.value;
 
-      // Decrypt and verify token - get email + passwordHash from payload
+      // Decrypt and verify token - get email from payload
       const tokenPayload = yield* verifyPasswordResetToken(token, secret);
 
-      const { email, passwordHash: tokenPasswordHash } = tokenPayload;
-
-      // Call user's checkUserExists to get current passwordHash from DB
-      const result = yield* ResultAsync.fromPromise(
-        config.onPasswordReset.checkUserExists({ email }),
-        (error) =>
-          new CallbackError({ callback: 'checkUserExists', cause: error }),
-      );
-
-      if (!result.exists) {
-        return err(new UserNotFoundError());
-      }
-
-      const { passwordHash: dbPasswordHash } = result;
-
-      // Compare token's passwprdHash with DB's passwordHash
-      // If they don't match, password was already chnaged -> token invalid
-
-      if (tokenPasswordHash != dbPasswordHash) {
-        return err(new PasswordResetTokenAlreadyUsedError());
-      }
+      const { email } = tokenPayload;
 
       // Token is valid - append token to redirect URL
       const redirectUrl = `${config.onPasswordReset.redirects.tokenVerificationSuccess}?token=${token}`;
@@ -343,7 +321,6 @@ export class CredentialProvider implements CredentialProviderType {
       // Token is valid
       return ok({
         email,
-        passwordHash: dbPasswordHash,
         redirectTo: redirectUrl as `/${string}`,
       });
     })
@@ -391,28 +368,7 @@ export class CredentialProvider implements CredentialProviderType {
 
       // Decrypt and verify token directly
       const tokenPayload = yield* verifyPasswordResetToken(token, secret);
-      const { email, passwordHash: tokenPasswordHash } = tokenPayload;
-
-      // Call user's checkUserExists to get current passwordHash from DB
-      const result = yield* ResultAsync.fromPromise(
-        config.onPasswordReset.checkUserExists({ email }),
-        (error) =>
-          new CallbackError({ callback: 'checkUserExists', cause: error }),
-      );
-
-      if (!result.exists) {
-        return err(new UserNotFoundError());
-      }
-
-      const { passwordHash: currentPasswordHash } = result;
-
-      // Compare token's passwordHash with current passwordHash
-      // If they don't match, password was already changed → token already used
-      if (tokenPasswordHash !== currentPasswordHash) {
-        return err(new PasswordResetTokenAlreadyUsedError());
-      }
-
-      // Token is valid - proceed with password reset
+      const { email } = tokenPayload;
 
       // Hash the new password
       const hashedPassword = yield* hashPassword(newPassword);
@@ -422,7 +378,7 @@ export class CredentialProvider implements CredentialProviderType {
         config.onPasswordReset.updatePassword({ email, hashedPassword }),
         (error) =>
           new CallbackError({
-            callback: 'updatePassword',
+            callback: 'onPasswordReset.updatePassword',
             cause: error,
           }),
       );
@@ -432,7 +388,7 @@ export class CredentialProvider implements CredentialProviderType {
         config.onPasswordReset.sendPasswordUpdateEmail({ email }),
         (error) =>
           new CallbackError({
-            callback: 'sendPasswordChangeEmail',
+            callback: 'onPasswordReset.sendPasswordUpdateEmail',
             cause: error,
           }),
       );

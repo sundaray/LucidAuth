@@ -98,12 +98,9 @@ export interface CredentialProviderConfig {
      * @param params - An object containing the `email` property.
      * @param params.email - The email address provided in the forgot password form.
      *
-     * @returns An object with `exists: true` (including the current `passwordHash`) if found,
-     * or `exists: false` otherwise.
+     * @returns An object with `exists: boolean`
      */
-    checkUserExists(params: {
-      email: string;
-    }): Promise<{ exists: false } | { exists: true; passwordHash: string }>;
+    checkUserExists(params: { email: string }): Promise<{ exists: boolean }>;
     /**
      * A callback that LucidAuth executes to send the password reset link.
      *
