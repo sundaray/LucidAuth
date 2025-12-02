@@ -22,7 +22,7 @@ export interface User extends BaseUser {}
 
 export interface BaseUserSession {
   user: BaseUser;
-  provider: string;
+  provider: AuthProviderId;
   expiresAt: string;
 }
 

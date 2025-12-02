@@ -11,7 +11,7 @@ export interface MockCredentialProviderConfig extends CredentialProviderConfig {
     sendVerificationEmail: Mock;
     createUser: Mock;
     redirects: {
-      checkEmail: `/${string}`;
+      signUpSuccess: `/${string}`;
       emailVerificationSuccess: `/${string}`;
       emailVerificationError: `/${string}`;
     };
@@ -23,10 +23,10 @@ export interface MockCredentialProviderConfig extends CredentialProviderConfig {
     updatePassword: Mock;
     sendPasswordUpdateEmail: Mock;
     redirects: {
-      checkEmail: `/${string}`;
-      resetForm: `/${string}`;
+      forgotPasswordSuccess: `/${string}`;
+      tokenVerificationSuccess: `/${string}`;
+      tokenVerificationError: `/${string}`;
       resetPasswordSuccess: `/${string}`;
-      resetPasswordError: `/${string}`;
     };
   };
 }
@@ -38,7 +38,7 @@ export function createMockCredentialProviderConfig(): MockCredentialProviderConf
       sendVerificationEmail: vi.fn(),
       createUser: vi.fn(),
       redirects: {
-        checkEmail: '/check-email',
+        signUpSuccess: '/check-email',
         emailVerificationSuccess: '/sign-in',
         emailVerificationError: '/sign-up/error',
       },
@@ -50,10 +50,10 @@ export function createMockCredentialProviderConfig(): MockCredentialProviderConf
       updatePassword: vi.fn(),
       sendPasswordUpdateEmail: vi.fn(),
       redirects: {
-        checkEmail: '/check-email',
-        resetForm: '/reset-password',
+        forgotPasswordSuccess: '/check-email',
+        tokenVerificationSuccess: '/reset-password',
+        tokenVerificationError: '/forgot-password/error',
         resetPasswordSuccess: '/sign-in',
-        resetPasswordError: '/forgot-password/error',
       },
     },
   };

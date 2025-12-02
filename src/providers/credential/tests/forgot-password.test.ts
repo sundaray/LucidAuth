@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { ok, okAsync, errAsync } from 'neverthrow';
+import { ok, okAsync } from 'neverthrow';
 import { CredentialProvider } from '../provider';
 import {
   createMockCredentialProviderConfig,
@@ -10,11 +10,7 @@ import {
   mockPasswordResetUrl,
   type MockCredentialProviderConfig,
 } from './setup';
-import {
-  CallbackError,
-  SuperAuthError,
-  UnknownError,
-} from '../../../core/errors';
+import { CallbackError } from '../../../core/errors';
 import type {
   PasswordResetToken,
   PasswordResetUrl,
@@ -74,7 +70,7 @@ describe('CredentialProvider.forgotPassword', () => {
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
-      redirectTo: mockConfig.onPasswordReset.redirects.checkEmail,
+      redirectTo: mockConfig.onPasswordReset.redirects.forgotPasswordSuccess,
     });
   });
 
@@ -91,7 +87,7 @@ describe('CredentialProvider.forgotPassword', () => {
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
-      redirectTo: mockConfig.onPasswordReset.redirects.checkEmail,
+      redirectTo: mockConfig.onPasswordReset.redirects.forgotPasswordSuccess,
     });
   });
 

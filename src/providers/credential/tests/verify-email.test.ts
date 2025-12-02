@@ -8,7 +8,7 @@ import {
   createMockCredentialProviderConfig,
   type MockCredentialProviderConfig,
 } from './setup';
-import { SuperAuthError, UnknownError } from '../../../core/errors';
+import { UnknownError } from '../../../core/errors';
 
 vi.mock('../../../core/verification', async (importOriginal) => {
   const actual =
@@ -130,12 +130,12 @@ describe('CredentialProvider.verifyEmail', () => {
     );
   });
 
-  test('should wrap non-SuperAuthError in UnknownError', async () => {
+  test('should wrap non-LucidAuthError in UnknownError', async () => {
     const request = createMockRequest(
       'https://myapp.com/api/auth/verify-email?token=valid-token',
     );
 
-    // Return a non-SuperAuthError from verifyEmailVerificationToken
+    // Return a non-LucidAuthError from verifyEmailVerificationToken
     const unknownError = { weird: 'error object' };
     vi.mocked(verifyEmailVerificationToken).mockReturnValue(
       errAsync(unknownError as any),

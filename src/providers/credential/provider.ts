@@ -100,7 +100,7 @@ export class CredentialProvider implements CredentialProviderType {
           }),
       );
 
-      return ok({ email, redirectTo: config.onSignUp.redirects.checkEmail });
+      return ok({ email, redirectTo: config.onSignUp.redirects.signUpSuccess });
     }).mapErr((error) => {
       if (error instanceof LucidAuthError) {
         return error;
@@ -243,7 +243,9 @@ export class CredentialProvider implements CredentialProviderType {
 
       // If user with a credential account doesn't exist, silently succeed
       if (!result.exists) {
-        return ok({ redirectTo: config.onPasswordReset.redirects.checkEmail });
+        return ok({
+          redirectTo: config.onPasswordReset.redirects.forgotPasswordSuccess,
+        });
       }
 
       // User exists with credential account - we have password hash
@@ -272,7 +274,9 @@ export class CredentialProvider implements CredentialProviderType {
           }),
       );
 
-      return ok({ redirectTo: config.onPasswordReset.redirects.checkEmail });
+      return ok({
+        redirectTo: config.onPasswordReset.redirects.forgotPasswordSuccess,
+      });
     }).mapErr((error) => {
       if (error instanceof LucidAuthError) {
         return error;
@@ -334,7 +338,7 @@ export class CredentialProvider implements CredentialProviderType {
       }
 
       // Token is valid - append token to redirect URL
-      const redirectUrl = `${config.onPasswordReset.redirects.resetForm}?token=${token}`;
+      const redirectUrl = `${config.onPasswordReset.redirects.tokenVerificationSuccess}?token=${token}`;
 
       // Token is valid
       return ok({
@@ -346,7 +350,8 @@ export class CredentialProvider implements CredentialProviderType {
       .orElse((error) => {
         // Only recover known domain errors
         if (error instanceof LucidAuthError) {
-          const errorPath = config.onPasswordReset.redirects.resetPasswordError;
+          const errorPath =
+            config.onPasswordReset.redirects.tokenVerificationError;
           const redirectUrl = appendErrorToPath(
             errorPath,
             error.name,

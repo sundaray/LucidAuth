@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { okAsync, errAsync } from 'neverthrow';
+import { okAsync } from 'neverthrow';
 import { SessionService } from './session-service';
 import type { AuthConfig } from '../../types';
 import type {

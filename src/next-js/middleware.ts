@@ -6,6 +6,7 @@ import {
 } from '../core/session';
 import type { AuthConfig } from '../types';
 import { COOKIE_NAMES } from '../core/constants';
+import type { UserSessionJWE } from '../core/session';
 
 export function createExtendUserSessionMiddleware(config: AuthConfig) {
   return async function extendUserSessionMiddleware(request: NextRequest) {
@@ -25,7 +26,7 @@ export function createExtendUserSessionMiddleware(config: AuthConfig) {
 
     // Decrypt the session to check expiration
     const decryptResult = await decryptUserSessionJWE({
-      JWE: userSessionCookie.value,
+      JWE: userSessionCookie.value as UserSessionJWE,
       secret: config.session.secret,
     });
 
@@ -33,9 +34,9 @@ export function createExtendUserSessionMiddleware(config: AuthConfig) {
       return response;
     }
 
-    const sessionPayload = decryptResult.value;
+    const userSession = decryptResult.value;
 
-    const exp = (sessionPayload as unknown as { exp?: number }).exp;
+    const exp = (userSession as unknown as { exp?: number }).exp;
 
     if (exp) {
       const now = Math.floor(Date.now() / 1000);
@@ -48,7 +49,10 @@ export function createExtendUserSessionMiddleware(config: AuthConfig) {
 
     // Session needs refresh - re-encrypt with new expiry
     const encryptResult = await encryptUserSessionPayload({
-      userSessionPayload: sessionPayload,
+      payload: {
+        user: userSession.user,
+        provider: userSession.provider,
+      },
       secret: config.session.secret,
       maxAge: config.session.maxAge,
     });
