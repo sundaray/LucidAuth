@@ -70,16 +70,6 @@ export class CreateAuthorizationUrlError extends LucidAuthError {
   }
 }
 
-export class DecryptOAuthStateJweError extends LucidAuthError {
-  constructor(options: { message?: string; cause?: unknown } = {}) {
-    super({
-      message: options.message || 'Failed to decrypt OAuth state JWE',
-      cause: options.cause,
-    });
-    this.name = 'DecryptOAuthStateJweError';
-  }
-}
-
 export class ProviderNotFoundError extends LucidAuthError {
   constructor(options: { providerId: string; cause?: unknown }) {
     super({
@@ -97,5 +87,25 @@ export class InvalidProviderTypeError extends LucidAuthError {
       cause: options.cause,
     });
     this.name = 'InvalidProviderTypeError';
+  }
+}
+
+export class ExpiredOAuthStateError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'OAuth state has expired.',
+      cause: options.cause,
+    });
+    this.name = 'ExpiredOAuthStateError';
+  }
+}
+
+export class InvalidOAuthStateError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'Invalid OAuth state.',
+      cause: options.cause,
+    });
+    this.name = 'InvalidOAuthStateError';
   }
 }

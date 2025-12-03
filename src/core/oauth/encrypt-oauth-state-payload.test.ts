@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { encryptOAuthStatePayload } from './';
-import type { OAuthStatePayload } from './';
+import type { OAuthState } from './types';
 
 describe('encryptOAuthStatePayload', () => {
   // 32-byte base64 key
@@ -8,7 +8,7 @@ describe('encryptOAuthStatePayload', () => {
     'base64',
   );
 
-  const mockState: OAuthStatePayload = {
+  const mockState: OAuthState = {
     state: 'random-csrf-state',
     codeVerifier: 'pkce-verifier-string',
     redirectTo: '/dashboard',

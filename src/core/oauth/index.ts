@@ -4,4 +4,4 @@ export { decryptOAuthStateJWE } from './decrypt-oauth-state-jwe.js';
 
 export type { AuthorizationUrlParams } from '../../providers/google/create-authorization-url.js';
 export type { DecryptOAuthStateJWEParams } from './decrypt-oauth-state-jwe.js';
-export type { OAuthStatePayload } from './types.js';
+export type { OAuthState } from './types.js';

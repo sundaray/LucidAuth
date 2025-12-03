@@ -3,7 +3,7 @@ import type { User } from '../../core/session/types';
 export interface CredentialProviderConfig {
   onSignUp: {
     /**
-     * A callback that LucidAuth executes to check if a user with a credential account already exists.
+     * A user-provided callback that LucidAuth executes.
      *
      * LucidAuth provides the email address from the sign-up form as the callback parameter. Query your database
      * to check if a user with this email already has a credential-based account.
@@ -14,7 +14,9 @@ export interface CredentialProviderConfig {
      * @returns An object with `exists: true` if the user has a credential account,
      * or `exists: false` otherwise.
      */
-    checkUserExists(params: { email: string }): Promise<{ exists: boolean }>;
+    checkCredentialUserExists(params: {
+      email: string;
+    }): Promise<{ exists: boolean }>;
     /**
      * A callback that LucidAuth executes to send the email verification link.
      *
@@ -30,7 +32,7 @@ export interface CredentialProviderConfig {
       url: string;
     }): Promise<void>;
     /**
-     * A callback that LucidAuth executes after the user clicks the email verification link.
+     * A user-provided callback that LucidAuth executes after the user clicks the email verification link.
      *
      * LucidAuth provides the verified email address, the hashed password, and any additional
      * fields from the sign-up form as callback parameters. Use these to create the user
@@ -40,7 +42,7 @@ export interface CredentialProviderConfig {
      * @param params.email - The verified email address.
      * @param params.hashedPassword - The hashed password (hashed by LucidAuth).
      */
-    createUser(params: {
+    createCredentialUser(params: {
       email: string;
       hashedPassword: string;
       [key: string]: unknown;
@@ -69,28 +71,31 @@ export interface CredentialProviderConfig {
       emailVerificationError: `/${string}`;
     };
   };
-  /**
-   * A callback that LucidAuth executes when a user attempts to sign in.
-   *
-   * LucidAuth provides the email address from the sign-in form as the callback parameter.
-   * Use this to query your database and return the user details you want stored in the user session.
-   *
-   * You **must** include the `hashedPassword` in the returned object. LucidAuth uses
-   * the `hashedPassword` to verify the credentials during sign-in but automatically excludes it from the
-   * user session.
-   *
-   * @param params - An object containing the `email` property.
-   * @param params.email - The email address provided in the sign-in form.
-   *
-   * @returns The user object if found (must include `hashedPassword`), or `null` if not found.
-   */
-  onSignIn(params: {
-    email: string;
-  }): Promise<(User & { hashedPassword: string }) | null>;
+  onSignIn: {
+    /**
+     * A user-provided callback that LucidAuth executes when a user attempts to sign in.
+     *
+     * LucidAuth provides the email address from the sign-in form as the callback parameter.
+     * Use this to query your database and return the user details you want stored in the user session.
+     *
+     * You **must** include the `hashedPassword` in the returned object. LucidAuth uses
+     * the `hashedPassword` to verify the credentials during sign-in but automatically excludes it from the
+     * user session.
+     *
+     * @param params - An object containing the `email` property.
+     * @param params.email - The email address provided in the sign-in form.
+     *
+     * @returns The user object if found (must include `hashedPassword`), or `null` if not found.
+     */
+
+    getCredentialUser(params: {
+      email: string;
+    }): Promise<(User & { hashedPassword: string }) | null>;
+  };
 
   onPasswordReset: {
     /**
-     * A callback that LucidAuth executes to verify the user exists before sending a password reset email.
+     * A user-provided callback that LucidAuth executes to verify the user exists before sending a password reset email.
      *
      * LucidAuth provides the email address from the forgot password form as the callback parameter.
      * Query your database to check if the user exists.
@@ -100,7 +105,9 @@ export interface CredentialProviderConfig {
      *
      * @returns An object with `exists: boolean`
      */
-    checkUserExists(params: { email: string }): Promise<{ exists: boolean }>;
+    checkCredentialUserExists(params: {
+      email: string;
+    }): Promise<{ exists: boolean }>;
     /**
      * A callback that LucidAuth executes to send the password reset link.
      *

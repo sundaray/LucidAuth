@@ -68,12 +68,12 @@ export class InvalidPasswordResetTokenError extends LucidAuthError {
   }
 }
 
-export class VerifyPasswordResetTokenError extends LucidAuthError {
+export class ExpiredPasswordResetTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
-      message: options.message || 'Failed to verify password reset token.',
+      message: options.message || 'Password reset token has expired.',
       cause: options.cause,
     });
-    this.name = 'VerifyPasswordResetTokenError';
+    this.name = 'ExpiredPasswordResetTokenError';
   }
 }

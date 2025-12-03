@@ -11,16 +11,6 @@ export class GenerateEmailVerificationTokenError extends LucidAuthError {
   }
 }
 
-export class VerifyEmailVerificationTokenError extends LucidAuthError {
-  constructor(options: { message?: string; cause?: unknown } = {}) {
-    super({
-      message: options.message || 'Failed to verify email verification token.',
-      cause: options.cause,
-    });
-    this.name = 'VerifyEmailVerificationTokenError';
-  }
-}
-
 export class ExpiredEmailVerificationTokenError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({

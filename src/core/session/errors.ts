@@ -20,16 +20,6 @@ export class EncryptUserSessionPayloadError extends LucidAuthError {
   }
 }
 
-export class DecryptUserSessionError extends LucidAuthError {
-  constructor(options: { message?: string; cause?: unknown } = {}) {
-    super({
-      message: options.message || 'Failed to decrypt user session JWE.',
-      cause: options.cause,
-    });
-    this.name = 'DecryptUserSessionError';
-  }
-}
-
 export class RunOAuthProviderSignInCallbackError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
@@ -98,5 +88,25 @@ export class DeleteUserSessionError extends LucidAuthError {
       cause: options.cause,
     });
     this.name = 'DeleteUserSessionError';
+  }
+}
+
+export class ExpiredUserSessionError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'User session has expired.',
+      cause: options.cause,
+    });
+    this.name = 'ExpiredUserSessionError';
+  }
+}
+
+export class InvalidUserSessionError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'Invalid user session.',
+      cause: options.cause,
+    });
+    this.name = 'InvalidUserSessionError';
   }
 }

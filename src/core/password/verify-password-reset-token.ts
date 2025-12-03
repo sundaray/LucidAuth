@@ -1,7 +1,10 @@
-import { jwtVerify } from 'jose';
+import { jwtVerify, errors } from 'jose';
 import { ResultAsync } from 'neverthrow';
 import { Buffer } from 'node:buffer';
-import { VerifyPasswordResetTokenError } from './errors';
+import {
+  ExpiredPasswordResetTokenError,
+  InvalidPasswordResetTokenError,
+} from './errors';
 
 interface PasswordResetTokenPayload {
   email: string;
@@ -10,7 +13,10 @@ interface PasswordResetTokenPayload {
 export function verifyPasswordResetToken(
   token: string,
   secret: string,
-): ResultAsync<PasswordResetTokenPayload, VerifyPasswordResetTokenError> {
+): ResultAsync<
+  PasswordResetTokenPayload,
+  ExpiredPasswordResetTokenError | InvalidPasswordResetTokenError
+> {
   return ResultAsync.fromPromise(
     (async () => {
       const secretKey = Buffer.from(secret, 'base64');
@@ -22,6 +28,11 @@ export function verifyPasswordResetToken(
 
       return payload;
     })(),
-    (error) => new VerifyPasswordResetTokenError({ cause: error }),
+    (error) => {
+      if (error instanceof errors.JWTExpired) {
+        return new ExpiredPasswordResetTokenError({ cause: error });
+      }
+      return new InvalidPasswordResetTokenError({ cause: error });
+    },
   );
 }

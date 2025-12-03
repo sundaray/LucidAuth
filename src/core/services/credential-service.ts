@@ -106,10 +106,7 @@ export class CredentialService {
   verifyPasswordResetToken(
     request: Request,
     provider: CredentialProvider,
-  ): ResultAsync<
-    { email: string; passwordHash: string; redirectTo: `/${string}` },
-    LucidAuthError
-  > {
+  ): ResultAsync<{ email: string; redirectTo: `/${string}` }, LucidAuthError> {
     const config = this.config;
     return provider
       .verifyPasswordResetToken(request, config.session.secret)

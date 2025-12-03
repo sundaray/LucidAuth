@@ -12,6 +12,7 @@ import {
 
 import { InvalidProviderTypeError } from './oauth/errors';
 import { LucidAuthError, UnknownError } from './errors';
+import { appendErrorToPath } from './utils/append-error-to-path';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,
@@ -214,15 +215,26 @@ export function createAuthHelpers<TContext>(
         yield* oauthSessionStorage.deleteSession(context);
 
         return ok({ redirectTo });
-      }).mapErr((error) => {
-        if (error instanceof LucidAuthError) {
-          return error;
-        }
-        return new UnknownError({
-          context: 'auth.handleOAuthCallback',
-          cause: error,
+      })
+        .orElse((error) => {
+          if (error instanceof LucidAuthError) {
+            const errorPath = provider.getErrorRedirectPath();
+            const redirectUrl = appendErrorToPath(
+              errorPath,
+              error.name,
+            ) as `/${string}`;
+
+            return ok({ redirectTo: redirectUrl });
+          }
+
+          return errAsync(error);
+        })
+        .mapErr((error) => {
+          return new UnknownError({
+            context: 'auth.handleOAuthCallback',
+            cause: error,
+          });
         });
-      });
     },
     // --------------------------------------------
     // Handle email verification

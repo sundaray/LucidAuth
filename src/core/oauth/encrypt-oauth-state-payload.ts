@@ -1,12 +1,12 @@
 import { EncryptJWT } from 'jose';
 import { ResultAsync } from 'neverthrow';
 import { EncryptOAuthStatePayloadError } from './errors.js';
-import type { OAuthStatePayload } from './types.js';
+import type { OAuthState } from './types.js';
 import { Buffer } from 'node:buffer';
 import type { OAuthStateJWE } from './types.js';
 
 export function encryptOAuthStatePayload(params: {
-  oauthState: OAuthStatePayload;
+  oauthState: OAuthState;
   secret: string;
   maxAge: number;
 }): ResultAsync<OAuthStateJWE, EncryptOAuthStatePayloadError> {

@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { encryptUserSessionPayload } from './';
-import { decryptUserSessionJWE } from './';
-import type { UserSessionPayload, UserSessionJWE } from './';
+import { encryptUserSessionPayload, decryptUserSessionJWE } from './';
+import type { UserSessionPayload, UserSessionJWE } from './types';
+import { InvalidUserSessionError, ExpiredUserSessionError } from './errors';
 
 describe('decryptUserSession', () => {
   const validSecret = Buffer.from('this-is-a-32-byte-secret-key-!!!').toString(
@@ -61,7 +61,8 @@ describe('decryptUserSession', () => {
 
       const error = result._unsafeUnwrapErr();
 
-      expect(error.name).toBe('DecryptUserSessionError');
+      expect(error).toBeInstanceOf(InvalidUserSessionError);
+      expect(error.name).toBe('InvalidUserSessionError');
     });
 
     test('should return error if secret does not match', async () => {
@@ -79,7 +80,8 @@ describe('decryptUserSession', () => {
 
       const error = result._unsafeUnwrapErr();
 
-      expect(error.name).toBe('DecryptUserSessionError');
+      expect(error).toBeInstanceOf(InvalidUserSessionError);
+      expect(error.name).toBe('InvalidUserSessionError');
     });
   });
 
@@ -132,7 +134,8 @@ describe('decryptUserSession', () => {
 
       const error = result._unsafeUnwrapErr();
 
-      expect(error.name).toBe('DecryptUserSessionError');
+      expect(error).toBeInstanceOf(ExpiredUserSessionError);
+      expect(error.name).toBe('ExpiredUserSessionError');
     });
   });
 });

@@ -1,6 +1,12 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { generateEmailVerificationToken } from './generate-email-verification-token';
-import { verifyEmailVerificationToken } from './verify-email-verification-token';
+import {
+  generateEmailVerificationToken,
+  verifyEmailVerificationToken,
+} from './';
+import {
+  InvalidEmailVerificationTokenError,
+  ExpiredEmailVerificationTokenError,
+} from './errors';
 
 describe('verifyEmailVerificationToken', () => {
   const validSecret = Buffer.from('this-is-a-32-byte-secret-key-!!').toString(
@@ -48,7 +54,8 @@ describe('verifyEmailVerificationToken', () => {
       expect(result.isErr()).toBe(true);
       const error = result._unsafeUnwrapErr();
 
-      expect(error.name).toBe('VerifyEmailVerificationTokenError');
+      expect(error).toBeInstanceOf(InvalidEmailVerificationTokenError);
+      expect(error.name).toBe('InvalidEmailVerificationTokenError');
     });
   });
 
@@ -88,9 +95,11 @@ describe('verifyEmailVerificationToken', () => {
 
       const result = await verifyEmailVerificationToken(token, validSecret);
 
-      const error = result._unsafeUnwrapErr();
+      expect(result.isErr()).toBe(true);
 
-      expect(error.name).toBe('VerifyEmailVerificationTokenError');
+      const error = result._unsafeUnwrapErr();
+      expect(error).toBeInstanceOf(ExpiredEmailVerificationTokenError);
+      expect(error.name).toBe('ExpiredEmailVerificationTokenError');
     });
   });
 });

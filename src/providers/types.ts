@@ -1,6 +1,6 @@
 import type { LucidAuthError } from '../core/errors';
 import { Result, ResultAsync } from 'neverthrow';
-import type { OAuthStatePayload } from '../core/oauth/types';
+import type { OAuthState } from '../core/oauth/types';
 import type { User } from '../core/session/types';
 import type { CredentialProviderConfig } from './credential/types';
 
@@ -17,13 +17,15 @@ export interface OAuthProvider {
   }): Result<string, LucidAuthError>;
   completeSignin(
     request: Request,
-    oauthStatePayload: OAuthStatePayload,
+    oauthStatePayload: OAuthState,
     baseUrl: string,
   ): ResultAsync<Record<string, any>, LucidAuthError>;
 
   onAuthenticated(
     userClaims: Record<string, any>,
   ): ResultAsync<User, LucidAuthError>;
+
+  getErrorRedirectPath(): `/${string}`;
 }
 
 export interface CredentialProvider {

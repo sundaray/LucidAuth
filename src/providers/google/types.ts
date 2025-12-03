@@ -36,16 +36,27 @@ export interface GoogleProviderConfig {
    * The OAuth client secret of your Google Cloud project.
    */
   clientSecret: string;
-  /**
-   * A callback that SuperAuth executes after a user successfully authenticates with Google.
-   *
-   * SuperAuth provides the user claims (profile information returned by Google) as the
-   * callback parameter. Use these claims to find or create a user in your database,
-   * then return the data you want stored in the user session.
-   *
-   *
-   * @param userClaims - The profile information returned by Google.
-   * @returns The object you return becomes the user session.
-   */
-  onAuthenticated(userClaims: GoogleUserClaims): Promise<User>;
+  prompt?: 'select_account' | 'consent' | 'none';
+  onAuthentication: {
+    /**
+     * A user-provided callback that LucidAuth executes after a user successfully authenticates with Google.
+     *
+     * LucidAuth provides the user claims (profile information returned by Google) as the
+     * callback parameter. Use these claims to find or create a user in your database,
+     * then return the data you want stored in the user session.
+     *
+     *
+     * @param userClaims - The profile information returned by Google.
+     * @returns The object you return becomes the user session.
+     */
+    createGoogleUser(userClaims: GoogleUserClaims): Promise<User>;
+    redirects: {
+      /**
+       * The URL LucidAuth should redirect the user to if an error occurs during OAuth authentication.
+       *
+       * LucidAuth will append an `error` query parameter to this URL describing the reason for the error.
+       */
+      error: `/${string}`;
+    };
+  };
 }

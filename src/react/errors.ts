@@ -1,6 +1,6 @@
-import { SuperAuthError } from '../core/errors.js';
+import { LucidAuthError } from '../core/errors.js';
 
-export class FetchUserSessionError extends SuperAuthError {
+export class FetchUserSessionError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
       message: options.message || 'Failed to fetch user session',
@@ -10,7 +10,7 @@ export class FetchUserSessionError extends SuperAuthError {
   }
 }
 
-export class MissingUserSessionProviderError extends SuperAuthError {
+export class MissingUserSessionProviderError extends LucidAuthError {
   constructor(options: { message?: string } = {}) {
     super({
       message:

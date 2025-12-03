@@ -1,14 +1,14 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { encryptOAuthStatePayload } from './';
-import { decryptOAuthStateJWE } from './';
-import type { OAuthStatePayload } from './';
+import { encryptOAuthStatePayload, decryptOAuthStateJWE } from './';
+import type { OAuthState } from './types';
+import { InvalidOAuthStateError, ExpiredOAuthStateError } from './errors';
 
 describe('decryptOAuthStateJWE', () => {
   const validSecret = Buffer.from('this-is-a-32-byte-secret-key-!!!').toString(
     'base64',
   );
 
-  const mockState: OAuthStatePayload = {
+  const mockState: OAuthState = {
     state: 'csrf-state-123',
     codeVerifier: 'pkce-verifier-456',
     redirectTo: '/dashboard',
@@ -16,7 +16,7 @@ describe('decryptOAuthStateJWE', () => {
   };
 
   // Helper to create tokens for decryption tests
-  const createJWE = async (state: OAuthStatePayload = mockState, age = 600) => {
+  const createJWE = async (state: OAuthState = mockState, age = 600) => {
     const result = await encryptOAuthStatePayload({
       oauthState: state,
       secret: validSecret,
@@ -49,7 +49,8 @@ describe('decryptOAuthStateJWE', () => {
 
       expect(result.isErr()).toBe(true);
       const error = result._unsafeUnwrapErr();
-      expect(error.name).toBe('DecryptOAuthStateJweError');
+      expect(error).toBeInstanceOf(InvalidOAuthStateError);
+      expect(error.name).toBe('InvalidOAuthStateError');
     });
 
     test('should return error for wrong secret', async () => {
@@ -66,7 +67,8 @@ describe('decryptOAuthStateJWE', () => {
       expect(result.isErr()).toBe(true);
 
       const error = result._unsafeUnwrapErr();
-      expect(error.name).toBe('DecryptOAuthStateJweError');
+      expect(error).toBeInstanceOf(InvalidOAuthStateError);
+      expect(error.name).toBe('InvalidOAuthStateError');
     });
   });
 
@@ -118,7 +120,8 @@ describe('decryptOAuthStateJWE', () => {
       expect(result.isErr()).toBe(true);
 
       const error = result._unsafeUnwrapErr();
-      expect(error.name).toBe('DecryptOAuthStateJweError');
+      expect(error).toBeInstanceOf(ExpiredOAuthStateError);
+      expect(error.name).toBe('ExpiredOAuthStateError');
     });
   });
 });

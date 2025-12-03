@@ -54,12 +54,12 @@ export class CredentialProvider implements CredentialProviderType {
     return safeTry(async function* () {
       const { email, password, ...additionalFields } = data;
 
-      // Execute user's checkUserExists callback
+      // Execute user's checkCredentialUserExists callback
       const result = yield* ResultAsync.fromPromise(
-        config.onSignUp.checkUserExists({ email }),
+        config.onSignUp.checkCredentialUserExists({ email }),
         (error) =>
           new CallbackError({
-            callback: 'onSignUp.checkUserExists',
+            callback: 'onSignUp.checkCredentialUserExists',
             cause: error,
           }),
       );
@@ -123,12 +123,12 @@ export class CredentialProvider implements CredentialProviderType {
     return safeTry(async function* () {
       const { email, password } = data;
 
-      // Execure user's onSignIn callback
+      // Execure user's getCredentialUser callback
       const user = yield* ResultAsync.fromPromise(
-        config.onSignIn({ email }),
+        config.onSignIn.getCredentialUser({ email }),
         (error) =>
           new CallbackError({
-            callback: 'onSignIn',
+            callback: 'onSignIn.getCredentialUser',
             cause: error,
           }),
       );
@@ -184,16 +184,16 @@ export class CredentialProvider implements CredentialProviderType {
 
       const { email, hashedPassword, ...additionalFields } = tokenPayload;
 
-      // Call user's createUser callback
+      // Call user's createCredentialUser callback
       yield* ResultAsync.fromPromise(
-        config.onSignUp.createUser({
+        config.onSignUp.createCredentialUser({
           email,
           hashedPassword,
           ...additionalFields,
         }),
         (error) =>
           new CallbackError({
-            callback: 'onSignUp.createUser',
+            callback: 'onSignUp.createCredentialUser',
             cause: error,
           }),
       );
@@ -235,9 +235,9 @@ export class CredentialProvider implements CredentialProviderType {
     return safeTry(async function* () {
       const { email } = data;
 
-      // Call user's checkUserExists callback
+      // Call user's checkCredentialUserExists callback
       const result = yield* ResultAsync.fromPromise(
-        config.onPasswordReset.checkUserExists({ email }),
+        config.onPasswordReset.checkCredentialUserExists({ email }),
         (error) =>
           new CallbackError({
             callback: 'onPasswordReset.checkUserExists',

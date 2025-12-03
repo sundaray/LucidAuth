@@ -1,8 +1,8 @@
-import { jwtDecrypt } from 'jose';
+import { jwtDecrypt, errors } from 'jose';
 import { ResultAsync } from 'neverthrow';
-import { DecryptOAuthStateJweError } from './errors.js';
-import type { OAuthStatePayload } from './index.js';
+import type { OAuthState } from './index.js';
 import { Buffer } from 'node:buffer';
+import { ExpiredOAuthStateError, InvalidOAuthStateError } from './errors.js';
 
 export interface DecryptOAuthStateJWEParams {
   jwe: string;
@@ -11,7 +11,7 @@ export interface DecryptOAuthStateJWEParams {
 
 export function decryptOAuthStateJWE(
   params: DecryptOAuthStateJWEParams,
-): ResultAsync<OAuthStatePayload, DecryptOAuthStateJweError> {
+): ResultAsync<OAuthState, ExpiredOAuthStateError | InvalidOAuthStateError> {
   const { jwe, secret } = params;
 
   // Decode the base64 secret to get the raw bytes
@@ -20,8 +20,13 @@ export function decryptOAuthStateJWE(
   return ResultAsync.fromPromise(
     (async () => {
       const { payload } = await jwtDecrypt(jwe, secretKey);
-      return payload.oauthState as OAuthStatePayload;
+      return payload.oauthState as OAuthState;
     })(),
-    (error) => new DecryptOAuthStateJweError({ cause: error }),
+    (error) => {
+      if (error instanceof errors.JWTExpired) {
+        return new ExpiredOAuthStateError({ cause: error });
+      }
+      return new InvalidOAuthStateError({ cause: error });
+    },
   );
 }

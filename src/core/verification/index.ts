@@ -6,7 +6,6 @@ export type { EmailVerificationToken } from './types.js';
 
 export {
   GenerateEmailVerificationTokenError,
-  VerifyEmailVerificationTokenError,
   ExpiredEmailVerificationTokenError,
   InvalidEmailVerificationTokenError,
   BuildEmailVerificationUrlError,

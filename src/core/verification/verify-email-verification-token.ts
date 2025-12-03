@@ -1,13 +1,19 @@
-import { jwtVerify } from 'jose';
+import { jwtVerify, errors } from 'jose';
 import { ResultAsync } from 'neverthrow';
 import { Buffer } from 'node:buffer';
-import { VerifyEmailVerificationTokenError } from './errors.js';
 import type { EmailVerificationPayload } from './types.js';
+import {
+  ExpiredEmailVerificationTokenError,
+  InvalidEmailVerificationTokenError,
+} from './errors.js';
 
 export function verifyEmailVerificationToken(
   token: string,
   secret: string,
-): ResultAsync<EmailVerificationPayload, VerifyEmailVerificationTokenError> {
+): ResultAsync<
+  EmailVerificationPayload,
+  ExpiredEmailVerificationTokenError | InvalidEmailVerificationTokenError
+> {
   return ResultAsync.fromPromise(
     (async () => {
       const secretKey = Buffer.from(secret, 'base64');
@@ -19,6 +25,11 @@ export function verifyEmailVerificationToken(
 
       return payload;
     })(),
-    (error) => new VerifyEmailVerificationTokenError({ cause: error }),
+    (error) => {
+      if (error instanceof errors.JWTExpired) {
+        return new ExpiredEmailVerificationTokenError({ cause: error });
+      }
+      return new InvalidEmailVerificationTokenError({ cause: error });
+    },
   );
 }

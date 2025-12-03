@@ -1,7 +1,9 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { verifyPasswordResetToken } from './verify-password-reset-token';
-import { generatePasswordResetToken } from './generate-password-reset-token';
-import { VerifyPasswordResetTokenError } from './errors';
+import { verifyPasswordResetToken, generatePasswordResetToken } from './';
+import {
+  InvalidPasswordResetTokenError,
+  ExpiredPasswordResetTokenError,
+} from './errors';
 
 describe('verifyPasswordResetToken', () => {
   // 32-byte key encoded as base64
@@ -63,8 +65,8 @@ describe('verifyPasswordResetToken', () => {
     expect(result.isErr()).toBe(true);
 
     const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(VerifyPasswordResetTokenError);
-    expect(error.name).toBe('VerifyPasswordResetTokenError');
+    expect(error).toBeInstanceOf(InvalidPasswordResetTokenError);
+    expect(error.name).toBe('InvalidPasswordResetTokenError');
   });
 
   test('should return error for empty secret', async () => {
@@ -75,7 +77,7 @@ describe('verifyPasswordResetToken', () => {
     expect(result.isErr()).toBe(true);
 
     const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(VerifyPasswordResetTokenError);
+    expect(error).toBeInstanceOf(InvalidPasswordResetTokenError);
   });
 
   // ============================================
@@ -121,7 +123,8 @@ describe('verifyPasswordResetToken', () => {
       expect(result.isErr()).toBe(true);
 
       const error = result._unsafeUnwrapErr();
-      expect(error).toBeInstanceOf(VerifyPasswordResetTokenError);
+      expect(error).toBeInstanceOf(ExpiredPasswordResetTokenError);
+      expect(error.name).toBe('ExpiredPasswordResetTokenError');
     });
   });
 });

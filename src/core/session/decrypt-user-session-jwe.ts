@@ -1,9 +1,9 @@
-import { jwtDecrypt } from 'jose';
+import { jwtDecrypt, errors } from 'jose';
 import { ResultAsync } from 'neverthrow';
-import { DecryptUserSessionError } from './errors';
+import { Buffer } from 'node:buffer';
 import type { User, UserSession, UserSessionJWE } from '.';
 import type { AuthProviderId } from '../../providers/types';
-import { Buffer } from 'node:buffer';
+import { ExpiredUserSessionError, InvalidUserSessionError } from './errors';
 
 export interface DecryptUserSessionParams {
   JWE: UserSessionJWE;
@@ -12,7 +12,7 @@ export interface DecryptUserSessionParams {
 
 export function decryptUserSessionJWE(
   params: DecryptUserSessionParams,
-): ResultAsync<UserSession, DecryptUserSessionError> {
+): ResultAsync<UserSession, ExpiredUserSessionError | InvalidUserSessionError> {
   const { JWE, secret } = params;
 
   // Decode the base64 secret to get the raw bytes
@@ -33,6 +33,11 @@ export function decryptUserSessionJWE(
         expiresAt: new Date(exp * 1000).toISOString(),
       };
     })(),
-    (error) => new DecryptUserSessionError({ cause: error }),
+    (error) => {
+      if (error instanceof errors.JWTExpired) {
+        return new ExpiredUserSessionError({ cause: error });
+      }
+      return new InvalidUserSessionError({ cause: error });
+    },
   );
 }

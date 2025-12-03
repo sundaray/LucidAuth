@@ -4,7 +4,7 @@ import { OAuthService } from './oauth-service';
 import type { AuthConfig } from '../../types';
 import type { SessionStorage } from '../session/types';
 import type { OAuthProvider } from '../../providers/types';
-import type { OAuthStatePayload, OAuthStateJWE } from '../oauth/types';
+import type { OAuthState, OAuthStateJWE } from '../oauth/types';
 import { LucidAuthError, UnknownError } from '../errors';
 import {
   GenerateStateError,
@@ -13,7 +13,7 @@ import {
 } from '../pkce';
 import {
   OAuthStateCookieNotFoundError,
-  DecryptOAuthStateJweError,
+  InvalidOAuthStateError,
   EncryptOAuthStatePayloadError,
 } from '../oauth/errors';
 import type { User } from '../session/types';
@@ -57,7 +57,7 @@ describe('OAuthService', () => {
     providers: [],
   };
 
-  const mockOAuthStatePayload: OAuthStatePayload = {
+  const mockOAuthStatePayload: OAuthState = {
     state: 'random-state-string',
     codeVerifier: 'random-code-verifier',
     provider: 'google',
@@ -79,6 +79,7 @@ describe('OAuthService', () => {
       getAuthorizationUrl: vi.fn(),
       completeSignin: vi.fn(),
       onAuthenticated: vi.fn(),
+      getErrorRedirectPath: vi.fn(),
     };
   }
 
@@ -312,7 +313,7 @@ describe('OAuthService', () => {
       const request = createMockRequest(
         'https://myapp.com/api/auth/callback/google?code=auth-code&state=random-state',
       );
-      const oauthStateWithoutRedirect: OAuthStatePayload = {
+      const oauthStateWithoutRedirect: OAuthState = {
         ...mockOAuthStatePayload,
         redirectTo: undefined,
       };
@@ -480,7 +481,7 @@ describe('OAuthService', () => {
       const request = createMockRequest(
         'https://myapp.com/callback?code=test&state=test',
       );
-      const decryptError = new DecryptOAuthStateJweError();
+      const decryptError = new InvalidOAuthStateError();
 
       vi.mocked(mockStorage.getSession).mockReturnValue(
         okAsync(mockOAuthStateJWE),

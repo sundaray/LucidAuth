@@ -1,7 +1,7 @@
 import { Result, ok, err, ResultAsync, safeTry } from 'neverthrow';
 import type { OAuthProvider } from '../../providers/types.js';
 import type { GoogleUserClaims, GoogleProviderConfig } from './types.js';
-import type { OAuthStatePayload } from '../../core/oauth/types.js';
+import type { OAuthState } from '../../core/oauth/types.js';
 
 import { decodeGoogleIdToken } from './decode-google-id-token.js';
 import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens.js';
@@ -42,10 +42,11 @@ export class GoogleProvider implements OAuthProvider {
   getAuthorizationUrl(params: {
     state: string;
     codeChallenge: string;
-    prompt?: string;
     baseUrl: string;
   }): Result<string, LucidAuthError> {
-    const { state, codeChallenge, prompt, baseUrl } = params;
+    const { state, codeChallenge, baseUrl } = params;
+    const prompt = this.config.prompt || 'select_account';
+
     return Result.fromThrowable(
       () => {
         const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -60,7 +61,7 @@ export class GoogleProvider implements OAuthProvider {
         url.searchParams.set('code_challenge', codeChallenge);
         url.searchParams.set('code_challenge_method', 'S256');
         url.searchParams.set('scope', 'openid email profile');
-        url.searchParams.set('prompt', prompt || 'select_account');
+        url.searchParams.set('prompt', prompt);
 
         return url.toString();
       },
@@ -73,7 +74,7 @@ export class GoogleProvider implements OAuthProvider {
   // --------------------------------------------
   completeSignin(
     request: Request,
-    oauthStatePayload: OAuthStatePayload,
+    oauthStatePayload: OAuthState,
     baseUrl: string,
   ): ResultAsync<GoogleUserClaims, LucidAuthError> {
     const config = this.config;
@@ -127,12 +128,19 @@ export class GoogleProvider implements OAuthProvider {
     userClaims: GoogleUserClaims,
   ): ResultAsync<User, LucidAuthError> {
     return ResultAsync.fromPromise(
-      this.config.onAuthenticated(userClaims),
+      this.config.onAuthentication.createGoogleUser(userClaims),
       (error) =>
         new CallbackError({
           callback: 'onAuthenticated',
           cause: error,
         }),
     );
+  }
+
+  // --------------------------------------------
+  // Get error redirect path
+  // --------------------------------------------
+  getErrorRedirectPath(): `/${string}` {
+    return this.config.onAuthentication.redirects.error;
   }
 }

@@ -4,7 +4,7 @@ export type OAuthStateJWE = string & { __brand: OAuthStateJWE };
 
 export type UserClaims = Record<string, any>;
 
-export interface OAuthStatePayload {
+export interface OAuthState {
   state: string;
   codeVerifier: string;
   redirectTo?: `/${string}`;
@@ -13,6 +13,6 @@ export interface OAuthStatePayload {
 
 export interface OAuthSignInResult {
   userClaims: Record<string, any>;
-  oauthState: OAuthStatePayload;
+  oauthState: OAuthState;
   tokens: Record<string, any>;
 }
