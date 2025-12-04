@@ -141,13 +141,23 @@ To keep your auth configuration file uncluttered, define the callback functions 
 ```ts
 // lib/auth/callbacks.ts
 
-import type { User, GoogleUserClaims } from 'lucidauth';
+import type {
+  CheckCredentialUserExistsParams,
+  CreateCredentialUserParams,
+  CreateGoogleUserParams,
+  GetCredentialUserParams,
+  SendPasswordResetEmailParams,
+  SendPasswordUpdateEmailParams,
+  SendVerificationEmailParams,
+  UpdatePasswordParams,
+  CheckCredentialUserExistsReturn,
+  CreateGoogleUserReturn,
+  GetCredentialUserReturn,
+} from 'lucidauth/core/types';
 
 export async function checkCredentialUserExists({
   email,
-}: {
-  email: string;
-}): Promise<{ exists: boolean }> {
+}: CheckCredentialUserExistsParams): Promise<CheckCredentialUserExistsReturn> {
   // Query your database to check if a user with this email
   // already has a credential-based account.
 }
@@ -155,35 +165,27 @@ export async function checkCredentialUserExists({
 export async function sendVerificationEmail({
   email,
   url,
-}: {
-  email: string;
-  url: string;
-}): Promise<void> {
+}: SendVerificationEmailParams): Promise<void> {
   // Use your email service to send the email verification link.
 }
 
 export async function createCredentialUser({
   email,
   hashedPassword,
-}: {
-  email: string;
-  hashedPassword: string;
-}): Promise<void> {
+}: CreateCredentialUserParams): Promise<void> {
   // Create the user and their credential account in your database.
 }
 
 export async function getCredentialUser({
   email,
-}: {
-  email: string;
-}): Promise<(User & { hashedPassword: string }) | null> {
+}: GetCredentialUserParams): Promise<GetCredentialUserReturn> {
   // Query your database for the user and return their details.
   // Return null if the user is not found.
 }
 
 export async function createGoogleUser(
-  userClaims: GoogleUserClaims,
-): Promise<User> {
+  userClaims: CreateGoogleUserParams,
+): Promise<CreateGoogleUserReturn> {
   // Find or create a user in your database using the claims from Google.
   // Return the user object to be stored in the session.
 }
@@ -191,28 +193,20 @@ export async function createGoogleUser(
 export async function sendPasswordResetEmail({
   email,
   url,
-}: {
-  email: string;
-  url: string;
-}): Promise<void> {
+}: SendPasswordResetEmailParams): Promise<void> {
   // Use your email service to send the password reset link.
 }
 
 export async function updatePassword({
   email,
   hashedPassword,
-}: {
-  email: string;
-  hashedPassword: string;
-}): Promise<void> {
+}: UpdatePasswordParams): Promise<void> {
   // Update the user's password in your database.
 }
 
 export async function sendPasswordUpdateEmail({
   email,
-}: {
-  email: string;
-}): Promise<void> {
+}: SendPasswordUpdateEmailParams): Promise<void> {
   // Use your email service to send a confirmation
   // that the password was changed.
 }
