@@ -563,6 +563,43 @@ This proxy handles two scenarios before allowing the request to proceed:
 
 For all other requests, the proxy calls `extendUserSessionMiddleware` to refresh the session for active users and allows the request to continue normally.
 
+## Extending the User Type Using Module Augmentation
+
+In the `createGoogleUser` and `getCredentialUser` callbacks, the object you return becomes part of the user session. The object you return can contain the fields: `id`, `email`, `name`, `image`, and `role`. This is because LucidAuth defines the default `User` type as follows:
+
+```ts
+export interface BaseUser {
+  id?: string | null;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+  role?: string | null;
+}
+
+export interface User extends BaseUser {}
+```
+
+If you attempt to return any other property, you will get a TypeScript error saying that the property does not exist on the `User` type. However, in practice, you often need to make additional properties available in the user session. You can achieve this using **Module Augmentation**.
+
+Let's say you want to make a property named `subscriptionId` available on the `user` object inside the user session (`session.user.subscriptionId`). To do this, create a file named `lucidauth.d.ts` in your project root (or inside your `src` folder) and add the following code:
+
+```ts
+// lucidauth.d.ts
+
+import 'lucidauth/core/types';
+
+declare module 'lucidauth/core/types' {
+  export interface BaseUser {
+    subscriptionId?: string;
+    // Add any other custom fields here
+  }
+}
+```
+
+LucidAuth's `User` interface extends `BaseUser`. By adding your custom fields to `BaseUser`, they automatically propagate to the `User` type and the `UserSession` type used throughout your application.
+
+Now, you can return `subscriptionId` from your callbacks without TypeScript errors, and access `session.user.subscriptionId` with full type safety and autocomplete throughout your app.
+
 ## Recommended Password Reset Flow
 
 LucidAuth recommends the following password reset flow, based on the [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
