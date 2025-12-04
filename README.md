@@ -357,7 +357,7 @@ export async function signInWithEmailAndPassword(data: {
 }
 ```
 
-During sign-in, two common error scenarios might occur: the user entered an email address that doesn't exist, or they entered the wrong password. LucidAuth exposes `AccountNotFoundError` and `InvalidCredentialsError` for these cases. You can target these errors by name to return user-friendly messages.
+During sign-in, two common error scenarios might occur: the user entered an email address that doesn't exist, or they entered the wrong password. LucidAuth throws `AccountNotFoundError` and `InvalidCredentialsError` for these cases. You can target these errors by name to return user-friendly messages.
 
 #### Sign Out
 
@@ -398,7 +398,7 @@ export async function forgotPasswordAction(email: string) {
 }
 ```
 
-When a user submits the forgot password form, LucidAuth redirects them to the path specified in `forgotPasswordSuccess`—regardless of whether the email exists. On that page, it's best practice to show a generic message:
+When a user submits the forgot password form, LucidAuth redirects them to the path you specified in the `forgotPasswordSuccess` property of the `redirects` object (inside `onPasswordReset`)—regardless of whether the email exists. On that page, it's best practice to show a generic message:
 
 > "If an account exists for the email address you entered, you will receive a password reset link within a minute or so."
 
@@ -442,4 +442,10 @@ export async function resetPasswordAction(token: string, password: string) {
 
 The `resetPassword` function requires a token as its first argument. Where does this token come from?
 
-When a user clicks the password reset link in their email, LucidAuth validates the token and redirects them to your reset password page (the path specified in `tokenVerificationSuccess`). LucidAuth appends the token as a query parameter to the URL. Extract this token using the `useSearchParams` hook and pass it to the `resetPasswordAction`.
+When a user clicks the password reset link in their email, LucidAuth validates the token and redirects them to the path you specified in the `tokenVerificationSuccess` property of the `redirects` object (inside `onPasswordReset`). LucidAuth appends the token as a query parameter to the URL:
+
+```
+https://yourapp.com/reset-password?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Extract this token using the `useSearchParams` hook and pass it to the `resetPasswordAction`.
