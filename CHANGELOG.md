@@ -1,5 +1,11 @@
 # lucidauth
 
+## 1.0.0-beta.0
+
+### Major Changes
+
+- d9bf985: V1 Beta Release
+
 ## 0.2.0
 
 ### Minor Changes
