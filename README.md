@@ -217,3 +217,229 @@ export async function sendPasswordUpdateEmail({
   // that the password was changed.
 }
 ```
+
+### Adding the [...lucidauth] Route Handler
+
+Create a file at `app/api/auth/[...lucidauth]/route.ts` and add the following code:
+
+```ts
+import { handler } from '@/auth';
+
+export { handler as GET, handler as POST };
+```
+
+> **⚠️ Important:** You must define this file at the exact path: `/app/api/auth/[...lucidauth]/route.ts`. LucidAuth internally relies on this specific route structure to handle OAuth callbacks and generate correct email verification and password reset URLs.
+
+### Creating Server Actions
+
+Inside your `app` directory, create a file named `actions.ts` and add the following Server Actions.
+
+Before we look at the individual actions, note that each action uses a `rethrowIfRedirect` function. LucidAuth internally uses Next.js's `redirect()` function, which throws a `NEXT_REDIRECT` error. You **must** catch and re-throw this error—if you swallow it, the redirect will be canceled.
+
+Create a file at `lib/auth/next-redirect.ts` with the following implementation:
+
+```ts
+// lib/auth/next-redirect.ts
+
+function isRedirectError(error: unknown): error is Error & { digest: string } {
+  return (
+    error instanceof Error &&
+    'digest' in error &&
+    typeof error.digest === 'string' &&
+    error.digest.startsWith('NEXT_REDIRECT')
+  );
+}
+
+export function rethrowIfRedirect(error: unknown): void {
+  if (isRedirectError(error)) {
+    throw error;
+  }
+}
+```
+
+Now let's look at each Server Action.
+
+#### Sign In with Google
+
+```ts
+// app/actions.ts
+
+'use server';
+
+import { signIn, signUp, signOut, forgotPassword, resetPassword } from '@/auth';
+import { LucidAuthError } from 'lucidauth/core/errors';
+import { rethrowIfRedirect } from '@/lib/auth/next-redirect';
+
+export async function signInWithGoogle() {
+  try {
+    await signIn('google', { redirectTo: '/dashboard' });
+  } catch (error) {
+    rethrowIfRedirect(error);
+
+    console.log('signInWithGoogle error: ', error);
+
+    if (error instanceof LucidAuthError) {
+      return { error: 'Google sign-in failed. Please try again.' };
+    }
+    return { error: 'Something went wrong. Please try again.' };
+  }
+}
+```
+
+#### Sign Up with Email & Password
+
+```ts
+export async function signUpWithEmailAndPassword(data: {
+  email: string;
+  password: string;
+}) {
+  // Validate your form data
+
+  try {
+    await signUp({
+      email: data.email,
+      password: data.password,
+    });
+  } catch (error) {
+    rethrowIfRedirect(error);
+
+    console.log('signUpWithEmailAndPassword error: ', error);
+
+    if (error instanceof LucidAuthError) {
+      switch (error.name) {
+        case 'AccountAlreadyExistsError':
+          return {
+            error: 'An account with this email already exists. Please sign in.',
+          };
+        default:
+          return { error: 'Sign-up failed. Please try again.' };
+      }
+    }
+    return { error: 'Something went wrong. Please try again.' };
+  }
+}
+```
+
+During sign-up, a common error scenario is when a user tries to register with an email address that is already associated with an existing credential account. LucidAuth throws an `AccountAlreadyExistsError` for this case. You can target this error by name to inform the user that they should sign in instead.
+
+#### Sign In with Email & Password
+
+```ts
+export async function signInWithEmailAndPassword(data: {
+  email: string;
+  password: string;
+}) {
+  // Validate your form data
+
+  try {
+    await signIn('credential', {
+      email: data.email,
+      password: data.password,
+      redirectTo: '/dashboard',
+    });
+  } catch (error) {
+    rethrowIfRedirect(error);
+
+    console.log('signInWithEmailAndPassword error: ', error);
+
+    if (error instanceof LucidAuthError) {
+      switch (error.name) {
+        case 'AccountNotFoundError':
+          return { error: 'No account found with this email. Please sign up.' };
+        case 'InvalidCredentialsError':
+          return { error: 'Invalid email or password.' };
+        default:
+          return { error: 'Sign-in failed. Please try again.' };
+      }
+    }
+    return { error: 'Something went wrong. Please try again.' };
+  }
+}
+```
+
+During sign-in, two common error scenarios might occur: the user entered an email address that doesn't exist, or they entered the wrong password. LucidAuth exposes `AccountNotFoundError` and `InvalidCredentialsError` for these cases. You can target these errors by name to return user-friendly messages.
+
+#### Sign Out
+
+```ts
+export async function signOutAction() {
+  try {
+    await signOut({ redirectTo: '/' });
+  } catch (error) {
+    rethrowIfRedirect(error);
+
+    console.log('signOut error: ', error);
+
+    return { error: 'Something went wrong. Please try again.' };
+  }
+}
+```
+
+#### Forgot Password
+
+```ts
+export async function forgotPasswordAction(email: string) {
+  // Validate your form data
+
+  try {
+    await forgotPassword(email);
+  } catch (error) {
+    rethrowIfRedirect(error);
+
+    console.log('forgotPassword error: ', error);
+
+    if (error instanceof LucidAuthError) {
+      return {
+        error: 'Failed to process forgot password request. Please try again.',
+      };
+    }
+    return { error: 'Something went wrong. Please try again.' };
+  }
+}
+```
+
+When a user submits the forgot password form, LucidAuth redirects them to the path specified in `forgotPasswordSuccess`—regardless of whether the email exists. On that page, it's best practice to show a generic message:
+
+> "If an account exists for the email address you entered, you will receive a password reset link within a minute or so."
+
+This prevents attackers from discovering which email addresses are registered in your system.
+
+#### Reset Password
+
+```ts
+export async function resetPasswordAction(token: string, password: string) {
+  // Validate your form data
+
+  try {
+    await resetPassword(token, password);
+  } catch (error) {
+    rethrowIfRedirect(error);
+
+    console.log('resetPassword error: ', error);
+
+    if (error instanceof LucidAuthError) {
+      switch (error.name) {
+        case 'InvalidPasswordResetTokenError':
+          return {
+            error:
+              'Invalid password reset token. Please request a new password reset link.',
+          };
+        case 'ExpiredPasswordResetTokenError':
+          return {
+            error:
+              'Password reset token has expired. Please request a new password reset link.',
+          };
+        default:
+          return {
+            error: 'Failed to reset password. Please try again.',
+          };
+      }
+    }
+    return { error: 'Something went wrong. Please try again.' };
+  }
+}
+```
+
+The `resetPassword` function requires a token as its first argument. Where does this token come from?
+
+When a user clicks the password reset link in their email, LucidAuth validates the token and redirects them to your reset password page (the path specified in `tokenVerificationSuccess`). LucidAuth appends the token as a query parameter to the URL. Extract this token using the `useSearchParams` hook and pass it to the `resetPasswordAction`.
