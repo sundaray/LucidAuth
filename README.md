@@ -449,3 +449,122 @@ https://yourapp.com/reset-password?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 Extract this token using the `useSearchParams` hook and pass it to the `resetPasswordAction`.
+
+### Accessing User Session in Server Components
+
+```ts
+import { getUserSession } from "@/auth";
+
+export default async function ServerPage() {
+  const session = await getUserSession();
+
+  return <p>{session?.user.email}</p>;
+}
+```
+
+### Accessing User Session in Client Components
+
+```ts
+"use client";
+
+import { useUserSession } from "lucidauth/react";
+
+export default function ClientPage() {
+  const { isLoading, isError, isAuthenticated, session } = useUserSession();
+
+  if (isLoading) {
+    return <p>Loading...</p>;
+  }
+
+  if (isError) {
+    return <p>Error fetching user session.</p>;
+  }
+
+  if (!isAuthenticated) {
+    return <p>Please sign in.</p>;
+  }
+
+  return <p>{session?.user.email}</p>;
+}
+```
+
+### Extending User Session
+
+Create a file named `proxy.ts` in your project root and add the following code:
+
+```ts
+// proxy.ts
+
+import { extendUserSessionMiddleware } from '@/auth';
+
+export { extendUserSessionMiddleware as proxy };
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth).*)',
+  ],
+};
+```
+
+> **📝 Note:** In Next.js 16, middleware was renamed to proxy. The `proxy.ts` file serves the same purpose as the previous `middleware.ts` file.
+
+Let's say you've set `maxAge` to 1 hour (`60 * 60`) in your auth configuration. This means the user session expires after 1 hour. But what if a user is actively using your app for 2 hours? Signing them out abruptly at the 1-hour mark would be a poor experience.
+
+The `extendUserSessionMiddleware` solves this by automatically refreshing the session while the user is active. When the session is past its halfway point and the user makes a request, the middleware extends the session, so active users don't get unexpectedly signed out.
+
+The `matcher` configuration ensures the middleware runs on all routes except static assets and auth API routes (which handle their own session logic).
+
+### Protecting Routes in Proxy
+
+You can extend the proxy to protect routes and control access based on authentication status:
+
+```ts
+// proxy.ts
+
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getUserSession, extendUserSessionMiddleware } from '@/auth';
+
+const protectedRoutes = ['/admin', '/dashboard'];
+const authRoutes = ['/signin', '/forgot-password', '/reset-password'];
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const session = await getUserSession();
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+
+  // Redirect unauthenticated users away from protected routes
+  if (!session && isProtectedRoute) {
+    const signInUrl = new URL('/signin', request.url);
+    signInUrl.searchParams.set('next', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  // Redirect authenticated users away from auth routes
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // Extend session for active users
+  return extendUserSessionMiddleware(request);
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth).*)',
+  ],
+};
+```
+
+This proxy handles two scenarios before allowing the request to proceed:
+
+1. **Unauthenticated users accessing protected routes**: When a user who isn't signed in tries to visit `/admin` or `/dashboard`, they're redirected to the sign-in page. The `next` query parameter preserves the original destination, so you can redirect them back after they sign in.
+
+2. **Authenticated users accessing auth routes**: A user who is already signed in has no reason to access `/signin`, `/forgot-password`, or `/reset-password`. The proxy redirects them to the home page instead.
+
+For all other requests, the proxy calls `extendUserSessionMiddleware` to refresh the session for active users and allows the request to continue normally.
