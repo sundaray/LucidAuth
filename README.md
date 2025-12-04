@@ -568,3 +568,28 @@ This proxy handles two scenarios before allowing the request to proceed:
 2. **Authenticated users accessing auth routes**: A user who is already signed in has no reason to access `/signin`, `/forgot-password`, or `/reset-password`. The proxy redirects them to the home page instead.
 
 For all other requests, the proxy calls `extendUserSessionMiddleware` to refresh the session for active users and allows the request to continue normally.
+
+## Recommended Password Reset Flow
+
+LucidAuth recommends the following password reset flow, based on the [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
+
+### Forgot Password
+
+When a user submits the forgot password form, there are two possibilities: the email exists in your system or it doesn't. In both cases, show the same generic message:
+
+> "If an account exists for the email address you entered, you will receive a password reset link within a minute or so."
+
+This prevents attackers from using the forgot password form to discover which email addresses are registered in your system (known as user enumeration).
+
+### Reset Password
+
+Your password reset form should have the following two input fields:
+
+- **New Password**
+- **Confirm New Password**
+
+Validate that both fields match before submitting the form.
+
+After the password has been successfully reset, redirect the user to a confirmation page that confirms their password has been updated and prompts them to sign in with their new password.
+
+Additionally, send a confirmation email notifying the user that their password was changed. This alerts them in case the reset was not initiated by them.
