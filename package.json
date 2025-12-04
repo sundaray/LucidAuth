@@ -15,6 +15,10 @@
       "types": "./dist/core/errors.d.ts",
       "import": "./dist/core/errors.js"
     },
+    "./core/types": {
+      "types": "./dist/core/types.d.ts",
+      "import": "./dist/core/types.js"
+    },
     "./providers/google": {
       "types": "./dist/providers/google/index.d.ts",
       "import": "./dist/providers/google/index.js"
