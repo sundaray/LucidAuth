@@ -1,5 +1,11 @@
 # lucidauth
 
+## 1.0.0-beta.4
+
+### Patch Changes
+
+- 0c2b8c4: Fix getSession to return null during Next.js prerendering instead of throwing an error when cookies() is called at build time.
+
 ## 1.0.0-beta.3
 
 ### Patch Changes
