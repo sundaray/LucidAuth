@@ -20,6 +20,10 @@ export const OAUTH_STATE_MAX_AGE = 60 * 10; // 10 minutes
 export const EMAIL_VERIFICATION_TOKEN_EXPIRES_IN = 60 * 30; // 30 minutes
 export const PASSWORD_RESET_TOKEN_EXPIRES_IN = 60 * 30; // 30 minutes
 
+// -------------------------------------------
+// AUTH ROUTES
+// -------------------------------------------
+
 export const AUTH_ROUTES = {
   VERIFY_EMAIL: '/api/auth/verify-email',
   VERIFY_PASSWORD_RESET_TOKEN: '/api/auth/verify-password-reset-token',

@@ -27,120 +27,117 @@ import type { User } from '../../core/session/types.js';
 // Google provider
 //
 // --------------------------------------------
-export class GoogleProvider implements OAuthProvider {
-  id = 'google' as const;
-  type = 'oauth' as const;
-  config: GoogleProviderConfig;
+export function createGoogleProvider(
+  config: GoogleProviderConfig,
+): OAuthProvider {
+  return {
+    id: 'google',
+    type: 'oauth',
 
-  constructor(config: GoogleProviderConfig) {
-    this.config = config;
-  }
+    // --------------------------------------------
+    // Create Authorization URL
+    // --------------------------------------------
+    createAuthorizationUrl(params: {
+      state: string;
+      codeChallenge: string;
+      baseUrl: string;
+    }): Result<string, LucidAuthError> {
+      const { state, codeChallenge, baseUrl } = params;
+      const prompt = config.prompt || 'select_account';
 
-  // --------------------------------------------
-  // Get Authorization URL
-  // --------------------------------------------
-  getAuthorizationUrl(params: {
-    state: string;
-    codeChallenge: string;
-    baseUrl: string;
-  }): Result<string, LucidAuthError> {
-    const { state, codeChallenge, baseUrl } = params;
-    const prompt = this.config.prompt || 'select_account';
+      return Result.fromThrowable(
+        () => {
+          const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
 
-    return Result.fromThrowable(
-      () => {
-        const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+          url.searchParams.set('response_type', 'code');
+          url.searchParams.set('client_id', config.clientId);
+          url.searchParams.set(
+            'redirect_uri',
+            `${baseUrl}${AUTH_ROUTES.CALLBACK}/google`,
+          );
+          url.searchParams.set('state', state);
+          url.searchParams.set('code_challenge', codeChallenge);
+          url.searchParams.set('code_challenge_method', 'S256');
+          url.searchParams.set('scope', 'openid email profile');
+          url.searchParams.set('prompt', prompt);
 
-        url.searchParams.set('response_type', 'code');
-        url.searchParams.set('client_id', this.config.clientId);
-        url.searchParams.set(
-          'redirect_uri',
-          `${baseUrl}${AUTH_ROUTES.CALLBACK}/google`,
-        );
-        url.searchParams.set('state', state);
-        url.searchParams.set('code_challenge', codeChallenge);
-        url.searchParams.set('code_challenge_method', 'S256');
-        url.searchParams.set('scope', 'openid email profile');
-        url.searchParams.set('prompt', prompt);
+          return url.toString();
+        },
+        (error) => new CreateAuthorizationUrlError({ cause: error }),
+      )();
+    },
 
-        return url.toString();
-      },
-      (error) => new CreateAuthorizationUrlError({ cause: error }),
-    )();
-  }
+    // --------------------------------------------
+    // Complete sign-in
+    // --------------------------------------------
+    completeSignin(
+      request: Request,
+      oauthStatePayload: OAuthState,
+      baseUrl: string,
+    ): ResultAsync<GoogleUserClaims, LucidAuthError> {
+      return safeTry(async function* () {
+        const url = new URL(request.url);
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
 
-  // --------------------------------------------
-  // Complete sign-in
-  // --------------------------------------------
-  completeSignin(
-    request: Request,
-    oauthStatePayload: OAuthState,
-    baseUrl: string,
-  ): ResultAsync<GoogleUserClaims, LucidAuthError> {
-    const config = this.config;
+        if (!code) {
+          return err(new AuthorizationCodeNotFoundError());
+        }
 
-    return safeTry(async function* () {
-      const url = new URL(request.url);
-      const code = url.searchParams.get('code');
-      const state = url.searchParams.get('state');
+        if (!state) {
+          return err(new StateNotFoundError());
+        }
 
-      if (!code) {
-        return err(new AuthorizationCodeNotFoundError());
-      }
+        // Compare the state stored in cookie with state stored in URL
+        if (oauthStatePayload.state !== state) {
+          return err(new StateMismatchError());
+        }
 
-      if (!state) {
-        return err(new StateNotFoundError());
-      }
+        // Exchange authorization code for tokens
+        const tokens = yield* exchangeAuthorizationCodeForTokens({
+          code,
+          clientId: config.clientId,
+          clientSecret: config.clientSecret,
+          redirectUri: `${baseUrl}${AUTH_ROUTES.CALLBACK}/google`,
+          codeVerifier: oauthStatePayload.codeVerifier,
+        });
 
-      // Compare the state stored in cookie with state stored in URL
-      if (oauthStatePayload.state !== state) {
-        return err(new StateMismatchError());
-      }
+        // Decode the id_token for user claims
+        const userClaims = yield* decodeGoogleIdToken(tokens.id_token);
 
-      // Exchange authorization code for tokens
-      const tokens = yield* exchangeAuthorizationCodeForTokens({
-        code,
-        clientId: config.clientId,
-        clientSecret: config.clientSecret,
-        redirectUri: `${baseUrl}${AUTH_ROUTES.CALLBACK}/google`,
-        codeVerifier: oauthStatePayload.codeVerifier,
-      });
-
-      // Decode the id_token for user claims
-      const userClaims = yield* decodeGoogleIdToken(tokens.id_token);
-
-      return ok(userClaims);
-    }).mapErr((error) => {
-      if (error instanceof LucidAuthError) {
-        return error;
-      }
-      return new UnknownError({
-        context: 'google-provider.completeSignin',
-        cause: error,
-      });
-    });
-  }
-
-  // --------------------------------------------
-  // Execute user's onAuthenticated callback
-  // --------------------------------------------
-  onAuthenticated(
-    userClaims: GoogleUserClaims,
-  ): ResultAsync<User, LucidAuthError> {
-    return ResultAsync.fromPromise(
-      this.config.onAuthentication.createGoogleUser(userClaims),
-      (error) =>
-        new CallbackError({
-          callback: 'onAuthenticated',
+        return ok(userClaims);
+      }).mapErr((error) => {
+        if (error instanceof LucidAuthError) {
+          return error;
+        }
+        return new UnknownError({
+          context: 'google-provider.completeSignin',
           cause: error,
-        }),
-    );
-  }
+        });
+      });
+    },
 
-  // --------------------------------------------
-  // Get error redirect path
-  // --------------------------------------------
-  getErrorRedirectPath(): `/${string}` {
-    return this.config.onAuthentication.redirects.error;
-  }
+    // --------------------------------------------
+    // Execute user's onAuthentication callback
+    // --------------------------------------------
+    onAuthentication(
+      userClaims: GoogleUserClaims,
+    ): ResultAsync<User, LucidAuthError> {
+      return ResultAsync.fromPromise(
+        config.onAuthentication.createGoogleUser(userClaims),
+        (error) =>
+          new CallbackError({
+            callback: 'onAuthentication',
+            cause: error,
+          }),
+      );
+    },
+
+    // --------------------------------------------
+    // Get error redirect path
+    // --------------------------------------------
+    getErrorRedirectPath(): `/${string}` {
+      return config.onAuthentication.redirects.error;
+    },
+  };
 }

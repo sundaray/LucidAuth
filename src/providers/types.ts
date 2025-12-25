@@ -9,7 +9,7 @@ export type AuthProviderId = 'google' | 'credential';
 export interface OAuthProvider {
   id: AuthProviderId;
   type: 'oauth';
-  getAuthorizationUrl(params: {
+  createAuthorizationUrl(params: {
     state: string;
     codeChallenge: string;
     prompt?: string;
@@ -21,7 +21,7 @@ export interface OAuthProvider {
     baseUrl: string,
   ): ResultAsync<Record<string, any>, LucidAuthError>;
 
-  onAuthenticated(
+  onAuthentication(
     userClaims: Record<string, any>,
   ): ResultAsync<User, LucidAuthError>;
 
