@@ -13,7 +13,8 @@ vi.mock('./decode-google-id-token.js', () => ({
 
 import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens.js';
 import { decodeGoogleIdToken } from './decode-google-id-token.js';
-import { ok, okAsync } from 'neverthrow';
+import { ok, err, okAsync, errAsync } from 'neverthrow';
+import { TokenFetchError, DecodeGoogleIdTokenError } from './errors.js';
 
 // ============================================
 // MOCK FACTORIES
@@ -321,6 +322,50 @@ describe('Google provider', () => {
 
       expect(result.isErr()).toBe(true);
       expect(result._unsafeUnwrapErr().name).toBe('StateMismatchError');
+    });
+
+    it('returns error when token exchange fails', async () => {
+      const provider = Google(createMockConfig());
+      const request = createCallbackRequest({
+        code: 'test-code',
+        state: 'test-state',
+      });
+      const oauthState = createMockOAuthState();
+
+      vi.mocked(exchangeAuthorizationCodeForTokens).mockReturnValue(
+        errAsync(new TokenFetchError()),
+      );
+
+      const result = await provider.completeSignin(
+        request,
+        oauthState,
+        'https://myapp.com',
+      );
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().name).toBe('TokenFetchError');
+    });
+
+    it('returns error when ID token decoding fails', async () => {
+      const provider = Google(createMockConfig());
+      const request = createCallbackRequest({
+        code: 'test-code',
+        state: 'test-state',
+      });
+      const oauthState = createMockOAuthState();
+
+      vi.mocked(decodeGoogleIdToken).mockReturnValue(
+        err(new DecodeGoogleIdTokenError()),
+      );
+
+      const result = await provider.completeSignin(
+        request,
+        oauthState,
+        'https://myapp.com',
+      );
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().name).toBe('TokenFetchError');
     });
   });
 
