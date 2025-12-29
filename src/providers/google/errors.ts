@@ -1,5 +1,16 @@
 import { LucidAuthError } from '../../core/errors.js';
 
+export class InvalidUrlError extends LucidAuthError {
+  constructor(options: { message?: string; cause?: unknown } = {}) {
+    super({
+      message: options.message || 'Invalid URL provided',
+      cause: options.cause,
+    });
+
+    this.name = 'InvalidUrlError';
+  }
+}
+
 export class EncodeClientCredentialsError extends LucidAuthError {
   constructor(options: { message?: string; cause?: unknown } = {}) {
     super({
