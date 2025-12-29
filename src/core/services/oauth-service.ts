@@ -50,7 +50,7 @@ export class OAuthService<TContext> {
         maxAge: OAUTH_STATE_MAX_AGE,
       });
 
-      const authorizationUrl = yield* provider.getAuthorizationUrl({
+      const authorizationUrl = yield* provider.createAuthorizationUrl({
         state,
         codeChallenge,
         baseUrl: config.baseUrl,
@@ -110,7 +110,7 @@ export class OAuthService<TContext> {
       );
 
       // Call provider's onAuthenticated callback
-      const user = yield* provider.onAuthenticated(userClaims);
+      const user = yield* provider.onAuthentication(userClaims);
 
       return ok({
         user,

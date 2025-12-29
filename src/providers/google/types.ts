@@ -1,3 +1,6 @@
+import type { Result, ResultAsync } from 'neverthrow';
+import type { LucidAuthError } from '../../core/errors.js';
+import type { OAuthState } from '../../core/oauth/types.js';
 import type { User } from '../../core/session/types.js';
 
 export interface GoogleUserClaims {
@@ -59,4 +62,23 @@ export interface GoogleProviderConfig {
       error: `/${string}`;
     };
   };
+}
+
+export interface GoogleProvider {
+  id: 'google';
+  type: 'oauth';
+  createAuthorizationUrl(params: {
+    state: string;
+    codeChallenge: string;
+    baseUrl: string;
+  }): Result<string, LucidAuthError>;
+  completeSignin(
+    request: Request,
+    oauthStatePayload: OAuthState,
+    baseUrl: string,
+  ): ResultAsync<GoogleUserClaims, LucidAuthError>;
+  onAuthentication(
+    userClaims: GoogleUserClaims,
+  ): ResultAsync<User, LucidAuthError>;
+  getErrorRedirectPath(): `/${string}`;
 }

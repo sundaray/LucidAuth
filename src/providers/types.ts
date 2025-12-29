@@ -3,18 +3,21 @@ import { Result, ResultAsync } from 'neverthrow';
 import type { OAuthState } from '../core/oauth/types';
 import type { User } from '../core/session/types';
 import type { CredentialProviderConfig } from './credential/types';
+import type { GoogleProviderConfig } from './google';
 
 export type AuthProviderId = 'google' | 'credential';
 
 export interface OAuthProvider {
   id: AuthProviderId;
   type: 'oauth';
-  createAuthorizationUrl(params: {
+  createAuthorizationUrl(
+    config: GoogleProviderConfig,
+  ): (params: {
     state: string;
     codeChallenge: string;
     prompt?: string;
     baseUrl: string;
-  }): Result<string, LucidAuthError>;
+  }) => Result<string, LucidAuthError>;
   completeSignin(
     request: Request,
     oauthStatePayload: OAuthState,

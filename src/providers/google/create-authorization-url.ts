@@ -1,44 +1,40 @@
-import { Result, ok } from 'neverthrow';
+import { Result } from 'neverthrow';
+import { LucidAuthError } from '../../core/errors.js';
+import { AUTH_ROUTES } from '../../core/constants.js';
+import { CreateAuthorizationUrlError } from '../../core/oauth/errors.js';
 
-export interface AuthorizationUrlParams {
-  clientId: string;
-  redirectUri: string;
-  state: string;
-  codeChallenge: string;
-  prompt: 'select_account' | 'consent' | 'none';
-}
+import type { GoogleProviderConfig } from './types.js';
 
 const GOOGLE_AUTHORIZATION_ENDPOINT =
   'https://accounts.google.com/o/oauth2/v2/auth';
 
-// 'openid' - Required for OpenID Connect
-// 'email' - User's email address
-// 'profile' - User's basic profile info
-// @see https://developers.google.com/identity/protocols/oauth2/scopes
-const SCOPES = ['openid', 'email', 'profile'];
+const REDIRECT_PATH = '/api/auth/callback/google';
 
-export function createAuthorizationUrl(
-  params: AuthorizationUrlParams,
-): Result<string, never> {
-  const { clientId, redirectUri, state, codeChallenge, prompt } = params;
+function createAuthorizationUrl(config: GoogleProviderConfig) {
+  return function (params: {
+    state: string;
+    codeChallenge: string;
+    baseUrl: string;
+  }): Result<string, LucidAuthError> {
+    const { state, codeChallenge, baseUrl } = params;
+    const prompt = config.prompt || 'select_account';
 
-  const url = new URL(GOOGLE_AUTHORIZATION_ENDPOINT);
+    return Result.fromThrowable(
+      () => {
+        const url = new URL(GOOGLE_AUTHORIZATION_ENDPOINT);
 
-  // Required OAuth 2.0 parameters
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('client_id', clientId);
-  url.searchParams.set('redirect_uri', redirectUri);
-  url.searchParams.set('state', state);
+        url.searchParams.set('response_type', 'code');
+        url.searchParams.set('client_id', config.clientId);
+        url.searchParams.set('redirect_uri', `${baseUrl}${REDIRECT_PATH}`);
+        url.searchParams.set('state', state);
+        url.searchParams.set('code_challenge', codeChallenge);
+        url.searchParams.set('code_challenge_method', 'S256');
+        url.searchParams.set('scope', 'openid email profile');
+        url.searchParams.set('prompt', prompt);
 
-  // PKCE parameters
-  url.searchParams.set('code_challenge', codeChallenge);
-  url.searchParams.set('code_challenge_method', 'S256');
-
-  // Scopes
-  url.searchParams.set('scope', SCOPES.join(' '));
-
-  // Prompt (user configurable)
-  url.searchParams.set('prompt', prompt);
-
-  return ok(url.toString());
+        return url.toString();
+      },
+      (error) => new CreateAuthorizationUrlError({ cause: error }),
+    )();
+  };
 }
