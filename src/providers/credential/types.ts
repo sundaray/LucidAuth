@@ -1,4 +1,6 @@
-import type { User } from '../../core/session/types';
+import type { ResultAsync } from 'neverthrow';
+import type { LucidAuthError } from '../../core/errors.js';
+import type { User } from '../../core/session/types.js';
 
 export interface CredentialProviderConfig {
   onSignUp: {
@@ -175,4 +177,36 @@ export interface CredentialProviderConfig {
       resetPasswordSuccess: `/${string}`;
     };
   };
+}
+
+export interface CredentialProvider {
+  id: 'credential';
+  type: 'credential';
+  signUp(
+    data: { email: string; password: string; [key: string]: unknown },
+    secret: string,
+    baseUrl: string,
+  ): ResultAsync<{ email: string; redirectTo: `/${string}` }, LucidAuthError>;
+  signIn(data: {
+    email: string;
+    password: string;
+  }): ResultAsync<User & { hashedPassword: string }, LucidAuthError>;
+  verifyEmail(
+    request: Request,
+    secret: string,
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError>;
+  forgotPassword(
+    data: { email: string },
+    secret: string,
+    baseUrl: string,
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError>;
+  verifyPasswordResetToken(
+    request: Request,
+    secret: string,
+  ): ResultAsync<{ email: string; redirectTo: `/${string}` }, LucidAuthError>;
+  resetPassword(
+    token: string,
+    data: { newPassword: string },
+    secret: string,
+  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError>;
 }

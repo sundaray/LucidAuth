@@ -6,7 +6,7 @@ import {
   GetUserSessionError,
   SaveUserSessionError,
 } from '../core/session/errors';
-import { isNextJsDynamicError } from '../core/utils/nextjs-dynamic-error';
+import { isNextJsDynamicError } from '../core/utils';
 
 export class NextJsSessionStorage implements SessionStorage<undefined> {
   private cookieName: string;

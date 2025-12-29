@@ -12,7 +12,7 @@ import {
 
 import { InvalidProviderTypeError } from './oauth/errors';
 import { LucidAuthError, UnknownError } from './errors';
-import { appendErrorToPath } from './utils/append-error-to-path';
+import { appendErrorToPath } from './utils';
 
 export function createAuthHelpers<TContext>(
   config: AuthConfig,
