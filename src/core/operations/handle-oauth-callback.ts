@@ -32,7 +32,7 @@ export function handleOAuthCallback(ctx: AuthContext) {
       return errAsync(new InvalidProviderTypeError({ providerId }));
     }
 
-    const oauthProvider = provider as OAuthProvider;
+    const oauthProvider = provider;
 
     return safeTry(async function* () {
       const oauthStateJWE = yield* cookies.get(COOKIE_NAMES.OAUTH_STATE);

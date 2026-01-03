@@ -21,6 +21,7 @@ export function createAuthHelpers(
 ) {
   const ctx: AuthContext = {
     config,
+    // The 'providers' key will look like: Map { 'google' => GoogleProviderObj, 'credential' => CredentialProviderObj }
     providers: new Map(providers.map((provider) => [provider.id, provider])),
     cookies,
   };
