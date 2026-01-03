@@ -1,155 +1,207 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ok, okAsync } from 'neverthrow';
-import { CredentialProvider } from '../provider';
+import { forgotPassword } from '../forgot-password.js';
 import {
   createMockCredentialProviderConfig,
-  testSecret,
-  testBaseUrl,
-  mockToken,
-  mockPasswordResetUrl,
-  type MockCredentialProviderConfig,
-} from './setup';
-import { CallbackError } from '../../../core/errors';
-import type {
-  PasswordResetToken,
-  PasswordResetUrl,
-} from '../../../core/password/types';
+  TEST_SECRET,
+  TEST_BASE_URL,
+} from './setup.js';
+import { CallbackError } from '../../../core/errors.js';
 
-// ============================================
-// MOCK CORE MODULES
-// ============================================
-
-vi.mock('../../../core/password', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/password')>();
-  return {
-    ...actual,
-    generatePasswordResetToken: vi.fn(),
-    buildPasswordResetUrl: vi.fn(),
-  };
-});
+// Mock dependencies
+vi.mock('../../../core/password/index.js', () => ({
+  generatePasswordResetToken: vi
+    .fn()
+    .mockReturnValue(okAsync('mock-reset-token')),
+  buildPasswordResetUrl: vi
+    .fn()
+    .mockReturnValue(
+      ok(
+        'https://myapp.com/api/auth/verify-password-reset-token?token=mock-token',
+      ),
+    ),
+}));
 
 import {
   generatePasswordResetToken,
   buildPasswordResetUrl,
-} from '../../../core/password';
+} from '../../../core/password/index.js';
 
-describe('CredentialProvider.forgotPassword', () => {
-  let provider: CredentialProvider;
-  let mockConfig: MockCredentialProviderConfig;
-
-  const testEmail = 'test@example.com';
-
+describe('forgotPassword', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockConfig = createMockCredentialProviderConfig();
-    provider = new CredentialProvider(mockConfig);
+    vi.clearAllMocks();
   });
 
-  test('should return redirectTo on successful forgot password request', async () => {
-    mockConfig.onPasswordReset.checkCredentialUserExists.mockResolvedValue({
-      exists: true,
-    });
-    vi.mocked(generatePasswordResetToken).mockReturnValue(
-      okAsync(mockToken as PasswordResetToken),
-    );
-    vi.mocked(buildPasswordResetUrl).mockReturnValue(
-      ok(mockPasswordResetUrl as PasswordResetUrl),
-    );
-    mockConfig.onPasswordReset.sendPasswordResetEmail.mockResolvedValue(
-      undefined,
-    );
+  it('returns success redirect URL when user exists', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleForgotPassword = forgotPassword(config);
 
-    const result = await provider.forgotPassword(
-      { email: testEmail },
-      testSecret,
-      testBaseUrl,
+    const result = await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
     );
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
-      redirectTo: mockConfig.onPasswordReset.redirects.forgotPasswordSuccess,
+      redirectTo: '/auth/forgot-password-success',
     });
   });
 
-  test('should silently succeed when user does not exist', async () => {
-    mockConfig.onPasswordReset.checkCredentialUserExists.mockResolvedValue({
-      exists: false,
-    });
+  it('checks if user exists', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleForgotPassword = forgotPassword(config);
 
-    const result = await provider.forgotPassword(
-      { email: testEmail },
-      testSecret,
-      testBaseUrl,
+    await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
     );
 
-    expect(result.isOk()).toBe(true);
-    expect(result._unsafeUnwrap()).toEqual({
-      redirectTo: mockConfig.onPasswordReset.redirects.forgotPasswordSuccess,
-    });
-  });
-
-  test('should not generate token or send email when user does not exist', async () => {
-    mockConfig.onPasswordReset.checkCredentialUserExists.mockResolvedValue({
-      exists: false,
-    });
-
-    await provider.forgotPassword(
-      { email: testEmail },
-      testSecret,
-      testBaseUrl,
-    );
-
-    expect(generatePasswordResetToken).not.toHaveBeenCalled();
-    expect(buildPasswordResetUrl).not.toHaveBeenCalled();
     expect(
-      mockConfig.onPasswordReset.sendPasswordResetEmail,
+      config.onPasswordReset.checkCredentialUserExists,
+    ).toHaveBeenCalledWith({
+      email: 'test@example.com',
+    });
+  });
+
+  it('silently succeeds when user does not exist', async () => {
+    const config = createMockCredentialProviderConfig({
+      onPasswordReset: {
+        checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: false }),
+        sendPasswordResetEmail: vi.fn(),
+        updatePassword: vi.fn(),
+        sendPasswordUpdateEmail: vi.fn(),
+        redirects: {
+          forgotPasswordSuccess: '/auth/forgot-password-success',
+          tokenVerificationSuccess: '/auth/reset-password',
+          tokenVerificationError: '/auth/error',
+          resetPasswordSuccess: '/auth/signin',
+        },
+      },
+    });
+    const handleForgotPassword = forgotPassword(config);
+
+    const result = await handleForgotPassword(
+      { email: 'nonexistent@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toEqual({
+      redirectTo: '/auth/forgot-password-success',
+    });
+    expect(generatePasswordResetToken).not.toHaveBeenCalled();
+    expect(
+      config.onPasswordReset.sendPasswordResetEmail,
     ).not.toHaveBeenCalled();
   });
 
-  test('should return CallbackError when checkCredentialUserExists throws', async () => {
-    const callbackError = new Error('Database connection failed');
-    mockConfig.onPasswordReset.checkCredentialUserExists.mockRejectedValue(
-      callbackError,
+  it('generates password reset token', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleForgotPassword = forgotPassword(config);
+
+    await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
     );
 
-    const result = await provider.forgotPassword(
-      { email: testEmail },
-      testSecret,
-      testBaseUrl,
-    );
-
-    expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+    expect(generatePasswordResetToken).toHaveBeenCalledWith({
+      secret: TEST_SECRET,
+      payload: { email: 'test@example.com' },
+    });
   });
 
-  test('should return CallbackError when sendPasswordResetEmail throws', async () => {
-    const callbackError = new Error('Email service unavailable');
+  it('builds password reset URL', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleForgotPassword = forgotPassword(config);
 
-    mockConfig.onPasswordReset.checkCredentialUserExists.mockResolvedValue({
-      exists: true,
+    await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(buildPasswordResetUrl).toHaveBeenCalledWith(
+      TEST_BASE_URL,
+      'mock-reset-token',
+      '/api/auth/verify-password-reset-token',
+    );
+  });
+
+  it('sends password reset email', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleForgotPassword = forgotPassword(config);
+
+    await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(config.onPasswordReset.sendPasswordResetEmail).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      url: 'https://myapp.com/api/auth/verify-password-reset-token?token=mock-token',
     });
-    vi.mocked(generatePasswordResetToken).mockReturnValue(
-      okAsync(mockToken as PasswordResetToken),
-    );
-    vi.mocked(buildPasswordResetUrl).mockReturnValue(
-      ok(mockPasswordResetUrl as PasswordResetUrl),
-    );
-    mockConfig.onPasswordReset.sendPasswordResetEmail.mockRejectedValue(
-      callbackError,
-    );
+  });
 
-    const result = await provider.forgotPassword(
-      { email: testEmail },
-      testSecret,
-      testBaseUrl,
+  it('returns CallbackError when checkCredentialUserExists fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onPasswordReset: {
+        checkCredentialUserExists: vi
+          .fn()
+          .mockRejectedValue(new Error('Database error')),
+        sendPasswordResetEmail: vi.fn(),
+        updatePassword: vi.fn(),
+        sendPasswordUpdateEmail: vi.fn(),
+        redirects: {
+          forgotPasswordSuccess: '/auth/forgot-password-success',
+          tokenVerificationSuccess: '/auth/reset-password',
+          tokenVerificationError: '/auth/error',
+          resetPasswordSuccess: '/auth/signin',
+        },
+      },
+    });
+    const handleForgotPassword = forgotPassword(config);
+
+    const result = await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
     );
 
     expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
+  });
 
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+  it('returns CallbackError when sendPasswordResetEmail fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onPasswordReset: {
+        checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: true }),
+        sendPasswordResetEmail: vi
+          .fn()
+          .mockRejectedValue(new Error('Email service error')),
+        updatePassword: vi.fn(),
+        sendPasswordUpdateEmail: vi.fn(),
+        redirects: {
+          forgotPasswordSuccess: '/auth/forgot-password-success',
+          tokenVerificationSuccess: '/auth/reset-password',
+          tokenVerificationError: '/auth/error',
+          resetPasswordSuccess: '/auth/signin',
+        },
+      },
+    });
+    const handleForgotPassword = forgotPassword(config);
+
+    const result = await handleForgotPassword(
+      { email: 'test@example.com' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
   });
 });

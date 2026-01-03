@@ -1,141 +1,240 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ok, okAsync, errAsync } from 'neverthrow';
-import { CredentialProvider } from '../provider';
+import { signUp } from '../sign-up.js';
 import {
   createMockCredentialProviderConfig,
-  testSecret,
-  testBaseUrl,
-  testUserData,
-  testUserDataWithAdditionalFields,
-  mockHashedPassword,
-  mockToken,
-  mockVerificationUrl,
-  type MockCredentialProviderConfig,
-} from './setup';
-import { AccountAlreadyExistsError } from '../errors';
-import {
-  LucidAuthError,
-  CallbackError,
-  UnknownError,
-} from '../../../core/errors';
-import type { PasswordHash } from '../../../core/password/types';
-import type { EmailVerificationToken } from '../../../core/verification';
-import type { EmailVerificationUrl } from '../../../core/verification/types';
+  TEST_SECRET,
+  TEST_BASE_URL,
+} from './setup.js';
+import { AccountAlreadyExistsError } from '../errors.js';
+import { CallbackError } from '../../../core/errors.js';
 
-// ============================================
-// MOCK CORE MODULES
-// ============================================
+// Mock dependencies
+vi.mock('../../../core/password/hash.js', () => ({
+  hashPassword: vi.fn().mockReturnValue(okAsync('hashed-password-123')),
+}));
 
-vi.mock('../../../core/password/hash', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/password/hash')>();
+vi.mock('../../../core/verification/index.js', () => ({
+  generateEmailVerificationToken: vi
+    .fn()
+    .mockReturnValue(okAsync('mock-verification-token')),
+  buildEmailVerificationUrl: vi
+    .fn()
+    .mockReturnValue(
+      ok('https://myapp.com/api/auth/verify-email?token=mock-token'),
+    ),
+}));
 
-  return {
-    ...actual,
-    hashPassword: vi.fn(),
-  };
-});
-
-vi.mock('../../../core/verification', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/verification')>();
-  return {
-    ...actual,
-    generateEmailVerificationToken: vi.fn(),
-    buildEmailVerificationUrl: vi.fn(),
-  };
-});
-
-import { hashPassword } from '../../../core/password/hash';
+import { hashPassword } from '../../../core/password/hash.js';
 import {
   generateEmailVerificationToken,
   buildEmailVerificationUrl,
-} from '../../../core/verification';
+} from '../../../core/verification/index.js';
 
-describe('CredentialProvider.signUp', () => {
-  let provider: CredentialProvider;
-  let mockConfig: MockCredentialProviderConfig;
-
+describe('signUp', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockConfig = createMockCredentialProviderConfig();
-    provider = new CredentialProvider(mockConfig);
+    vi.clearAllMocks();
   });
 
-  test('should return email and redirectTo on successful signUp', async () => {
-    mockConfig.onSignUp.checkCredentialUserExists.mockResolvedValue({
-      exists: false,
-    });
-    vi.mocked(hashPassword).mockReturnValue(
-      okAsync(mockHashedPassword as PasswordHash),
-    );
-    vi.mocked(generateEmailVerificationToken).mockReturnValue(
-      okAsync(mockToken as EmailVerificationToken),
-    );
-    vi.mocked(buildEmailVerificationUrl).mockReturnValue(
-      ok(mockVerificationUrl as EmailVerificationUrl),
-    );
+  it('returns redirect URL on successful sign up', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
 
-    mockConfig.onSignUp.sendVerificationEmail.mockResolvedValue(undefined);
-
-    const result = await provider.signUp(testUserData, testSecret, testBaseUrl);
+    const result = await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
-      email: testUserData.email,
-      redirectTo: mockConfig.onSignUp.redirects.signUpSuccess,
+      email: 'test@example.com',
+      redirectTo: '/auth/verify-email-sent',
     });
   });
 
-  test('should return AccountAlreadyExistsError when user exists', async () => {
-    mockConfig.onSignUp.checkCredentialUserExists.mockResolvedValue({
-      exists: true,
+  it('checks if user already exists', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
+
+    await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(config.onSignUp.checkCredentialUserExists).toHaveBeenCalledWith({
+      email: 'test@example.com',
     });
-
-    const result = await provider.signUp(testUserData, testSecret, testBaseUrl);
-
-    expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(AccountAlreadyExistsError);
   });
 
-  test('should return CallbackError when checkUserExists throws', async () => {
-    const callbackError = new Error('Database connection failed');
-    mockConfig.onSignUp.checkCredentialUserExists.mockRejectedValue(
-      callbackError,
+  it('returns error when user already exists', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignUp: {
+        checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: true }),
+        sendVerificationEmail: vi.fn(),
+        createCredentialUser: vi.fn(),
+        redirects: {
+          signUpSuccess: '/auth/verify-email-sent',
+          emailVerificationSuccess: '/auth/signin',
+          emailVerificationError: '/auth/error',
+        },
+      },
+    });
+    const handleSignUp = signUp(config);
+
+    const result = await handleSignUp(
+      { email: 'existing@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
     );
 
-    const result = await provider.signUp(testUserData, testSecret, testBaseUrl);
-
     expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(AccountAlreadyExistsError);
   });
 
-  test('should return CallbackError when sendVerificationEmail throws', async () => {
-    const callbackError = new Error('Email service unavailable');
+  it('hashes the password', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
 
-    mockConfig.onSignUp.checkCredentialUserExists.mockResolvedValue({
-      exists: false,
+    await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(hashPassword).toHaveBeenCalledWith('password123');
+  });
+
+  it('generates email verification token with correct payload', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
+
+    await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(generateEmailVerificationToken).toHaveBeenCalledWith({
+      secret: TEST_SECRET,
+      payload: {
+        email: 'test@example.com',
+        hashedPassword: 'hashed-password-123',
+      },
     });
-    vi.mocked(hashPassword).mockReturnValue(
-      okAsync(mockHashedPassword as PasswordHash),
-    );
-    vi.mocked(generateEmailVerificationToken).mockReturnValue(
-      okAsync(mockToken as EmailVerificationToken),
-    );
-    vi.mocked(buildEmailVerificationUrl).mockReturnValue(
-      ok(mockVerificationUrl as EmailVerificationUrl),
-    );
-    mockConfig.onSignUp.sendVerificationEmail.mockRejectedValue(callbackError);
+  });
 
-    const result = await provider.signUp(testUserData, testSecret, testBaseUrl);
+  it('includes additional fields in token payload', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
+
+    await handleSignUp(
+      {
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'Test User',
+        age: 25,
+      },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(generateEmailVerificationToken).toHaveBeenCalledWith({
+      secret: TEST_SECRET,
+      payload: {
+        email: 'test@example.com',
+        hashedPassword: 'hashed-password-123',
+        name: 'Test User',
+        age: 25,
+      },
+    });
+  });
+
+  it('builds email verification URL', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
+
+    await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(buildEmailVerificationUrl).toHaveBeenCalledWith(
+      TEST_BASE_URL,
+      'mock-verification-token',
+      '/api/auth/verify-email',
+    );
+  });
+
+  it('sends verification email with correct parameters', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignUp = signUp(config);
+
+    await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(config.onSignUp.sendVerificationEmail).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      url: 'https://myapp.com/api/auth/verify-email?token=mock-token',
+    });
+  });
+
+  it('returns CallbackError when checkCredentialUserExists fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignUp: {
+        checkCredentialUserExists: vi
+          .fn()
+          .mockRejectedValue(new Error('Database error')),
+        sendVerificationEmail: vi.fn(),
+        createCredentialUser: vi.fn(),
+        redirects: {
+          signUpSuccess: '/auth/verify-email-sent',
+          emailVerificationSuccess: '/auth/signin',
+          emailVerificationError: '/auth/error',
+        },
+      },
+    });
+    const handleSignUp = signUp(config);
+
+    const result = await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
 
     expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
+  });
 
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+  it('returns CallbackError when sendVerificationEmail fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignUp: {
+        checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: false }),
+        sendVerificationEmail: vi
+          .fn()
+          .mockRejectedValue(new Error('Email service error')),
+        createCredentialUser: vi.fn(),
+        redirects: {
+          signUpSuccess: '/auth/verify-email-sent',
+          emailVerificationSuccess: '/auth/signin',
+          emailVerificationError: '/auth/error',
+        },
+      },
+    });
+    const handleSignUp = signUp(config);
+
+    const result = await handleSignUp(
+      { email: 'test@example.com', password: 'password123' },
+      TEST_SECRET,
+      TEST_BASE_URL,
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
   });
 });

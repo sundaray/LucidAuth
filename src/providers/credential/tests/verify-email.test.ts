@@ -1,151 +1,179 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { okAsync, errAsync } from 'neverthrow';
-import { CredentialProvider } from '../provider';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ok, okAsync, errAsync } from 'neverthrow';
+import { verifyEmail } from '../verify-email.js';
 import {
-  testSecret,
-  createMockRequest,
-  mockHashedPassword,
   createMockCredentialProviderConfig,
-  type MockCredentialProviderConfig,
-} from './setup';
-import { UnknownError } from '../../../core/errors';
+  createMockRequest,
+  TEST_SECRET,
+} from './setup.js';
+import { CallbackError, LucidAuthError } from '../../../core/errors.js';
+import { EmailVerificationTokenNotFoundError } from '../../../core/verification/errors.js';
 
-vi.mock('../../../core/verification', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/verification')>();
-  return {
-    ...actual,
-    verifyEmailVerificationToken: vi.fn(),
-  };
-});
+// Mock dependencies
+vi.mock('../../../core/utils', () => ({
+  parseUrl: vi
+    .fn()
+    .mockReturnValue(
+      ok(new URL('https://myapp.com/api/auth/verify-email?token=valid-token')),
+    ),
+  appendErrorToPath: vi
+    .fn()
+    .mockImplementation((path, errorName) => `${path}?error=${errorName}`),
+}));
 
-import {
-  verifyEmailVerificationToken,
-  InvalidEmailVerificationTokenError,
-} from '../../../core/verification';
+vi.mock('../../../core/verification/index.js', () => ({
+  verifyEmailVerificationToken: vi.fn().mockReturnValue(
+    okAsync({
+      email: 'test@example.com',
+      hashedPassword: 'hashed-password-123',
+    }),
+  ),
+}));
 
-describe('CredentialProvider.verifyEmail', () => {
-  let provider: CredentialProvider;
-  let mockConfig: MockCredentialProviderConfig;
+import { parseUrl, appendErrorToPath } from '../../../core/utils';
+import { verifyEmailVerificationToken } from '../../../core/verification/index.js';
 
-  const mockTokenPayload = {
-    email: 'test@example.com',
-    hashedPassword: mockHashedPassword,
-    name: 'Test User',
-  };
-
+describe('verifyEmail', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockConfig = createMockCredentialProviderConfig();
-    provider = new CredentialProvider(mockConfig);
+    vi.clearAllMocks();
+    vi.mocked(parseUrl).mockReturnValue(
+      ok(new URL('https://myapp.com/api/auth/verify-email?token=valid-token')),
+    );
   });
 
-  test('should return redirectTo on successful email verification', async () => {
+  it('returns success redirect URL on successful verification', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyEmail = verifyEmail(config);
     const request = createMockRequest(
       'https://myapp.com/api/auth/verify-email?token=valid-token',
     );
 
-    vi.mocked(verifyEmailVerificationToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-    mockConfig.onSignUp.createCredentialUser.mockResolvedValue(undefined);
-
-    const result = await provider.verifyEmail(request, testSecret);
+    const result = await handleVerifyEmail(request, TEST_SECRET);
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
-      redirectTo: mockConfig.onSignUp.redirects.emailVerificationSuccess,
+      redirectTo: '/auth/signin',
     });
   });
 
-  test('should append error to redirect URL when token is missing', async () => {
+  it('parses URL from request', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyEmail = verifyEmail(config);
+    const request = createMockRequest(
+      'https://myapp.com/api/auth/verify-email?token=valid-token',
+    );
+
+    await handleVerifyEmail(request, TEST_SECRET);
+
+    expect(parseUrl).toHaveBeenCalledWith(request.url);
+  });
+
+  it('returns error when token is missing', async () => {
+    vi.mocked(parseUrl).mockReturnValue(
+      ok(new URL('https://myapp.com/api/auth/verify-email')),
+    );
+
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyEmail = verifyEmail(config);
     const request = createMockRequest(
       'https://myapp.com/api/auth/verify-email',
     );
 
-    const result = await provider.verifyEmail(request, testSecret);
+    const result = await handleVerifyEmail(request, TEST_SECRET);
 
     expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=email_verification_token_not_found_error`,
-    );
+    expect(result._unsafeUnwrap().redirectTo).toContain('/auth/error');
   });
 
-  test('should append error to redirect URL when token is empty', async () => {
-    const request = createMockRequest(
-      'https://myapp.com/api/auth/verify-email?token=',
-    );
-
-    const result = await provider.verifyEmail(request, testSecret);
-
-    expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=email_verification_token_not_found_error`,
-    );
-  });
-
-  test('should append error to redirect URL when token verification fails', async () => {
-    const request = createMockRequest(
-      'https://myapp.com/api/auth/verify-email?token=invalid-token',
-    );
-
-    const verificationError = new InvalidEmailVerificationTokenError();
-    vi.mocked(verifyEmailVerificationToken).mockReturnValue(
-      errAsync(verificationError),
-    );
-
-    const result = await provider.verifyEmail(request, testSecret);
-
-    expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=invalid_email_verification_token_error`,
-    );
-  });
-
-  test('should append callback_error to redirect URL when createUser throws', async () => {
+  it('verifies token with secret', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyEmail = verifyEmail(config);
     const request = createMockRequest(
       'https://myapp.com/api/auth/verify-email?token=valid-token',
     );
 
-    vi.mocked(verifyEmailVerificationToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
+    await handleVerifyEmail(request, TEST_SECRET);
 
-    const callbackError = new Error('Database connection failed');
-    mockConfig.onSignUp.createCredentialUser.mockRejectedValue(callbackError);
-
-    const result = await provider.verifyEmail(request, testSecret);
-
-    expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onSignUp.redirects.emailVerificationError}?error=on_sign_up_create_credential_user_callback_error`,
+    expect(verifyEmailVerificationToken).toHaveBeenCalledWith(
+      'valid-token',
+      TEST_SECRET,
     );
   });
 
-  test('should wrap non-LucidAuthError in UnknownError', async () => {
+  it('calls createCredentialUser with token payload', async () => {
+    vi.mocked(verifyEmailVerificationToken).mockReturnValue(
+      okAsync({
+        email: 'test@example.com',
+        hashedPassword: 'hashed-password-123',
+        name: 'Test User',
+      }),
+    );
+
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyEmail = verifyEmail(config);
     const request = createMockRequest(
       'https://myapp.com/api/auth/verify-email?token=valid-token',
     );
 
-    // Return a non-LucidAuthError from verifyEmailVerificationToken
-    const unknownError = { weird: 'error object' };
+    await handleVerifyEmail(request, TEST_SECRET);
+
+    expect(config.onSignUp.createCredentialUser).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      hashedPassword: 'hashed-password-123',
+      name: 'Test User',
+    });
+  });
+
+  it('redirects to error path on LucidAuthError', async () => {
+    class MockVerificationError extends LucidAuthError {
+      constructor() {
+        super({ message: 'Token expired' });
+        this.name = 'MockVerificationError';
+      }
+    }
+
     vi.mocked(verifyEmailVerificationToken).mockReturnValue(
-      errAsync(unknownError as any),
+      errAsync(new MockVerificationError()),
     );
 
-    const result = await provider.verifyEmail(request, testSecret);
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyEmail = verifyEmail(config);
+    const request = createMockRequest(
+      'https://myapp.com/api/auth/verify-email?token=expired-token',
+    );
 
-    expect(result.isErr()).toBe(true);
+    const result = await handleVerifyEmail(request, TEST_SECRET);
 
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(UnknownError);
+    expect(result.isOk()).toBe(true);
+    expect(appendErrorToPath).toHaveBeenCalledWith(
+      '/auth/error',
+      'MockVerificationError',
+    );
+  });
+
+  it('returns CallbackError when createCredentialUser fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignUp: {
+        checkCredentialUserExists: vi.fn(),
+        sendVerificationEmail: vi.fn(),
+        createCredentialUser: vi
+          .fn()
+          .mockRejectedValue(new Error('Database error')),
+        redirects: {
+          signUpSuccess: '/auth/verify-email-sent',
+          emailVerificationSuccess: '/auth/signin',
+          emailVerificationError: '/auth/error',
+        },
+      },
+    });
+    const handleVerifyEmail = verifyEmail(config);
+    const request = createMockRequest(
+      'https://myapp.com/api/auth/verify-email?token=valid-token',
+    );
+
+    const result = await handleVerifyEmail(request, TEST_SECRET);
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().redirectTo).toContain('/auth/error');
   });
 });

@@ -1,138 +1,153 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { okAsync, errAsync } from 'neverthrow';
-import { CredentialProvider } from '../provider';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ok, okAsync, errAsync } from 'neverthrow';
+import { verifyPasswordResetToken } from '../verify-password-reset-token.js';
 import {
   createMockCredentialProviderConfig,
-  testSecret,
-  mockToken,
   createMockRequest,
-  type MockCredentialProviderConfig,
-} from './setup';
-import { UnknownError } from '../../../core/errors';
+  TEST_SECRET,
+} from './setup.js';
+import { LucidAuthError } from '../../../core/errors.js';
 
-// ============================================
-// MOCK CORE MODULES
-// ============================================
+// Mock dependencies
+vi.mock('../../../core/utils', () => ({
+  parseUrl: vi
+    .fn()
+    .mockReturnValue(
+      ok(
+        new URL(
+          'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
+        ),
+      ),
+    ),
+}));
 
-vi.mock('../../../core/password', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/password')>();
-  return {
-    ...actual,
-    verifyPasswordResetToken: vi.fn(),
-  };
-});
+vi.mock('../../../core/utils/index.js', () => ({
+  appendErrorToPath: vi
+    .fn()
+    .mockImplementation((path, errorName) => `${path}?error=${errorName}`),
+}));
 
-import {
-  verifyPasswordResetToken,
-  InvalidPasswordResetTokenError,
-} from '../../../core/password';
+vi.mock('../../../core/password/index.js', () => ({
+  verifyPasswordResetToken: vi
+    .fn()
+    .mockReturnValue(okAsync({ email: 'test@example.com' })),
+  PasswordResetTokenNotFoundError: class extends Error {
+    name = 'PasswordResetTokenNotFoundError';
+  },
+}));
 
-describe('CredentialProvider.verifyPasswordResetToken', () => {
-  let provider: CredentialProvider;
-  let mockConfig: MockCredentialProviderConfig;
+import { parseUrl } from '../../../core/utils';
+import { appendErrorToPath } from '../../../core/utils/index.js';
+import { verifyPasswordResetToken as verifyToken } from '../../../core/password/index.js';
 
-  const testEmail = 'test@example.com';
-
-  const mockTokenPayload = {
-    email: testEmail,
-  };
-
+describe('verifyPasswordResetToken', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockConfig = createMockCredentialProviderConfig();
-    provider = new CredentialProvider(mockConfig);
+    vi.clearAllMocks();
+    vi.mocked(parseUrl).mockReturnValue(
+      ok(
+        new URL(
+          'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
+        ),
+      ),
+    );
   });
 
-  test('should return email and redirectTo on successful verification', async () => {
+  it('returns email and redirect URL on successful verification', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyToken = verifyPasswordResetToken(config);
     const request = createMockRequest(
-      `https://myapp.com/api/auth/verify-password-reset-token?token=${mockToken}`,
+      'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
     );
 
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
+    const result = await handleVerifyToken(request, TEST_SECRET);
 
     expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.email).toBe(testEmail);
-    expect(value.redirectTo).toContain(
-      mockConfig.onPasswordReset.redirects.tokenVerificationSuccess,
-    );
-    expect(value.redirectTo).toContain(`token=${mockToken}`);
+    expect(result._unsafeUnwrap()).toEqual({
+      email: 'test@example.com',
+      redirectTo: '/auth/reset-password?token=valid-token',
+    });
   });
 
-  test('should append error to redirect URL when token is missing', async () => {
+  it('parses URL from request', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyToken = verifyPasswordResetToken(config);
+    const request = createMockRequest(
+      'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
+    );
+
+    await handleVerifyToken(request, TEST_SECRET);
+
+    expect(parseUrl).toHaveBeenCalledWith(request.url);
+  });
+
+  it('redirects to error path when token is missing', async () => {
+    vi.mocked(parseUrl).mockReturnValue(
+      ok(new URL('https://myapp.com/api/auth/verify-password-reset-token')),
+    );
+
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyToken = verifyPasswordResetToken(config);
     const request = createMockRequest(
       'https://myapp.com/api/auth/verify-password-reset-token',
     );
 
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
+    const result = await handleVerifyToken(request, TEST_SECRET);
 
     expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().email).toBe('');
+    expect(result._unsafeUnwrap().redirectTo).toContain('/auth/error');
+  });
 
-    const value = result._unsafeUnwrap();
-    expect(value.email).toBe('');
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=password_reset_token_not_found_error`,
+  it('verifies token with secret', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyToken = verifyPasswordResetToken(config);
+    const request = createMockRequest(
+      'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
+    );
+
+    await handleVerifyToken(request, TEST_SECRET);
+
+    expect(verifyToken).toHaveBeenCalledWith('valid-token', TEST_SECRET);
+  });
+
+  it('appends token to redirect URL', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyToken = verifyPasswordResetToken(config);
+    const request = createMockRequest(
+      'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
+    );
+
+    const result = await handleVerifyToken(request, TEST_SECRET);
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().redirectTo).toBe(
+      '/auth/reset-password?token=valid-token',
     );
   });
 
-  test('should append error to redirect URL when token is empty', async () => {
+  it('redirects to error path on LucidAuthError', async () => {
+    class MockTokenError extends LucidAuthError {
+      constructor() {
+        super({ message: 'Token expired' });
+        this.name = 'MockTokenError';
+      }
+    }
+
+    vi.mocked(verifyToken).mockReturnValue(errAsync(new MockTokenError()));
+
+    const config = createMockCredentialProviderConfig();
+    const handleVerifyToken = verifyPasswordResetToken(config);
     const request = createMockRequest(
-      'https://myapp.com/api/auth/verify-password-reset-token?token=',
+      'https://myapp.com/api/auth/verify-password-reset-token?token=expired-token',
     );
 
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
+    const result = await handleVerifyToken(request, TEST_SECRET);
 
     expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.email).toBe('');
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=password_reset_token_not_found_error`,
+    expect(result._unsafeUnwrap().email).toBe('');
+    expect(appendErrorToPath).toHaveBeenCalledWith(
+      '/auth/error',
+      'MockTokenError',
     );
-  });
-
-  test('should append error to redirect URL when token verification fails', async () => {
-    const request = createMockRequest(
-      'https://myapp.com/api/auth/verify-password-reset-token?token=invalid-token',
-    );
-
-    const verificationError = new InvalidPasswordResetTokenError();
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      errAsync(verificationError),
-    );
-
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
-
-    expect(result.isOk()).toBe(true);
-
-    const value = result._unsafeUnwrap();
-    expect(value.email).toBe('');
-    expect(value.redirectTo).toBe(
-      `${mockConfig.onPasswordReset.redirects.tokenVerificationError}?error=invalid_password_reset_token_error`,
-    );
-  });
-
-  test('should wrap non-SuperAuthError in UnknownError', async () => {
-    const request = createMockRequest(
-      `https://myapp.com/api/auth/verify-password-reset-token?token=${mockToken}`,
-    );
-
-    const unknownError = { weird: 'error object' };
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      errAsync(unknownError as any),
-    );
-
-    const result = await provider.verifyPasswordResetToken(request, testSecret);
-
-    expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(UnknownError);
   });
 });

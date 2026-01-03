@@ -1,83 +1,127 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { okAsync } from 'neverthrow';
-import { CredentialProvider } from '../provider';
-import {
-  createMockCredentialProviderConfig,
-  testUserData,
-  mockUserSession,
-  type MockCredentialProviderConfig,
-} from './setup';
-import { AccountNotFoundError, InvalidCredentialsError } from '../errors';
-import { CallbackError } from '../../../core/errors';
+import { signIn } from '../sign-in.js';
+import { createMockCredentialProviderConfig, createMockUser } from './setup.js';
+import { AccountNotFoundError, InvalidCredentialsError } from '../errors.js';
+import { CallbackError } from '../../../core/errors.js';
 
-// ============================================
-// MOCK CORE MODULES
-// ============================================
+// Mock dependencies
+vi.mock('../../../core/password/verify.js', () => ({
+  verifyPassword: vi.fn().mockReturnValue(okAsync(true)),
+}));
 
-vi.mock('../../../core/password/verify', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/password/hash')>();
+import { verifyPassword } from '../../../core/password/verify.js';
 
-  return {
-    ...actual,
-    verifyPassword: vi.fn(),
-  };
-});
-
-import { verifyPassword } from '../../../core/password/verify';
-
-describe('CredentialProvider.signUp', () => {
-  let provider: CredentialProvider;
-  let mockConfig: MockCredentialProviderConfig;
-
+describe('signIn', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockConfig = createMockCredentialProviderConfig();
-    provider = new CredentialProvider(mockConfig);
+    vi.clearAllMocks();
   });
 
-  test('should return user session on successful sign in', async () => {
-    mockConfig.onSignIn.getCredentialUser.mockResolvedValue(mockUserSession);
-    vi.mocked(verifyPassword).mockReturnValue(okAsync(true));
+  it('returns user with hashed password on successful sign in', async () => {
+    const mockUser = {
+      ...createMockUser(),
+      hashedPassword: 'hashed-password-123',
+    };
+    const config = createMockCredentialProviderConfig({
+      onSignIn: {
+        getCredentialUser: vi.fn().mockResolvedValue(mockUser),
+      },
+    });
+    const handleSignIn = signIn(config);
 
-    const result = await provider.signIn(testUserData);
+    const result = await handleSignIn({
+      email: 'test@example.com',
+      password: 'password123',
+    });
 
     expect(result.isOk()).toBe(true);
-    expect(result._unsafeUnwrap()).toEqual(mockUserSession);
+    expect(result._unsafeUnwrap()).toEqual(mockUser);
   });
 
-  test('should return AccountNotFoundError when user does not exist', async () => {
-    mockConfig.onSignIn.getCredentialUser.mockResolvedValue(null);
+  it('calls getCredentialUser with email', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleSignIn = signIn(config);
 
-    const result = await provider.signIn(testUserData);
+    await handleSignIn({
+      email: 'test@example.com',
+      password: 'password123',
+    });
+
+    expect(config.onSignIn.getCredentialUser).toHaveBeenCalledWith({
+      email: 'test@example.com',
+    });
+  });
+
+  it('returns AccountNotFoundError when user not found', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignIn: {
+        getCredentialUser: vi.fn().mockResolvedValue(null),
+      },
+    });
+    const handleSignIn = signIn(config);
+
+    const result = await handleSignIn({
+      email: 'nonexistent@example.com',
+      password: 'password123',
+    });
 
     expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(AccountNotFoundError);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(AccountNotFoundError);
   });
 
-  test('should return InvalidCredentialsError when password is invalid', async () => {
-    mockConfig.onSignIn.getCredentialUser.mockResolvedValue(mockUserSession);
+  it('verifies password against hashed password', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignIn: {
+        getCredentialUser: vi.fn().mockResolvedValue({
+          ...createMockUser(),
+          hashedPassword: 'stored-hashed-password',
+        }),
+      },
+    });
+    const handleSignIn = signIn(config);
+
+    await handleSignIn({
+      email: 'test@example.com',
+      password: 'password123',
+    });
+
+    expect(verifyPassword).toHaveBeenCalledWith(
+      'password123',
+      'stored-hashed-password',
+    );
+  });
+
+  it('returns InvalidCredentialsError when password is invalid', async () => {
     vi.mocked(verifyPassword).mockReturnValue(okAsync(false));
 
-    const result = await provider.signIn(testUserData);
+    const config = createMockCredentialProviderConfig();
+    const handleSignIn = signIn(config);
+
+    const result = await handleSignIn({
+      email: 'test@example.com',
+      password: 'wrongpassword',
+    });
 
     expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(InvalidCredentialsError);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(InvalidCredentialsError);
   });
 
-  test('should return CallbackError when onSignIn throws', async () => {
-    const callbackError = new Error('Database connection failed');
-    mockConfig.onSignIn.getCredentialUser.mockRejectedValue(callbackError);
+  it('returns CallbackError when getCredentialUser fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onSignIn: {
+        getCredentialUser: vi
+          .fn()
+          .mockRejectedValue(new Error('Database error')),
+      },
+    });
+    const handleSignIn = signIn(config);
 
-    const result = await provider.signIn(testUserData);
+    const result = await handleSignIn({
+      email: 'test@example.com',
+      password: 'password123',
+    });
 
     expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
   });
 });

@@ -1,13 +1,10 @@
 import { ResultAsync, ok, err, errAsync, safeTry } from 'neverthrow';
 import type { AuthContext } from '../types.js';
-import type { AuthProviderId, OAuthProvider } from '../../providers/types.js';
+import type { AuthProviderId } from '../../providers/types.js';
 import { LucidAuthError } from '../errors.js';
-import {
-  ProviderNotFoundError,
-  InvalidProviderTypeError,
-  OAuthStateCookieNotFoundError,
-} from '../oauth/errors.js';
+import { OAuthStateCookieNotFoundError } from '../oauth/errors.js';
 import { decryptOAuthStateJWE } from '../oauth/index.js';
+import { getOAuthProvider } from '../../providers/get-oauth-provider.js';
 import {
   encryptUserSessionPayload,
   createUserSessionPayload,
@@ -16,33 +13,29 @@ import { COOKIE_NAMES } from '../constants.js';
 import { appendErrorToPath } from '../utils/index.js';
 
 export function handleOAuthCallback(ctx: AuthContext) {
-  const { config, providers, cookies } = ctx;
+  const { config, providers, cookies, session } = ctx;
 
   return function (
     request: Request,
     providerId: AuthProviderId,
   ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
-    const provider = providers.get(providerId);
+    const result = getOAuthProvider(providers, providerId);
 
-    if (!provider) {
-      return errAsync(new ProviderNotFoundError({ providerId }));
+    if (result.isErr()) {
+      return errAsync(result.error);
     }
 
-    if (provider.type !== 'oauth') {
-      return errAsync(new InvalidProviderTypeError({ providerId }));
-    }
-
-    const oauthProvider = provider;
+    const oauthProvider = result.value;
 
     return safeTry(async function* () {
-      const oauthStateJWE = yield* cookies.get(COOKIE_NAMES.OAUTH_STATE);
+      const JWE = yield* session.getOAuthState();
 
-      if (!oauthStateJWE) {
+      if (!JWE) {
         return err(new OAuthStateCookieNotFoundError());
       }
 
       const oauthState = yield* decryptOAuthStateJWE({
-        jwe: oauthStateJWE,
+        jwe: JWE,
         secret: config.session.secret,
       });
 
@@ -65,13 +58,8 @@ export function handleOAuthCallback(ctx: AuthContext) {
         maxAge: config.session.maxAge,
       });
 
-      yield* cookies.set(
-        COOKIE_NAMES.USER_SESSION,
-        sessionJWE,
-        config.session.maxAge,
-      );
-
-      yield* cookies.delete(COOKIE_NAMES.OAUTH_STATE);
+      yield* session.setUserSession(sessionJWE);
+      yield* session.deleteOAuthState();
 
       return ok({ redirectTo: oauthState.redirectTo || '/' });
     }).orElse((error) => {

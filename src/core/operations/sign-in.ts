@@ -1,4 +1,4 @@
-import { ResultAsync, ok, err, errAsync, safeTry } from 'neverthrow';
+import { ResultAsync, ok, errAsync, safeTry } from 'neverthrow';
 import type { AuthContext } from '../types.js';
 import type {
   AuthProviderId,
@@ -17,7 +17,7 @@ import {
   encryptUserSessionPayload,
   createUserSessionPayload,
 } from '../session/index.js';
-import { COOKIE_NAMES, OAUTH_STATE_MAX_AGE } from '../constants.js';
+import { OAUTH_STATE_MAX_AGE } from '../constants.js';
 
 type SignInOptions =
   | { redirectTo: `/${string}` }
@@ -26,7 +26,7 @@ type SignInOptions =
 type SignInResult = { authorizationUrl: string } | { redirectTo: `/${string}` };
 
 export function signIn(ctx: AuthContext) {
-  const { config, providers, cookies } = ctx;
+  const { config, providers, session } = ctx;
 
   return function (
     providerId: AuthProviderId,
@@ -80,11 +80,7 @@ export function signIn(ctx: AuthContext) {
         maxAge: OAUTH_STATE_MAX_AGE,
       });
 
-      yield* cookies.set(
-        COOKIE_NAMES.OAUTH_STATE,
-        oauthStateJWE,
-        OAUTH_STATE_MAX_AGE,
-      );
+      yield* session.setOAuthState(oauthStateJWE);
 
       const authorizationUrl = yield* provider.createAuthorizationUrl({
         state,
@@ -113,17 +109,13 @@ export function signIn(ctx: AuthContext) {
         provider: 'credential',
       });
 
-      const sessionJWE = yield* encryptUserSessionPayload({
+      const JWE = yield* encryptUserSessionPayload({
         payload: sessionPayload,
         secret: config.session.secret,
         maxAge: config.session.maxAge,
       });
 
-      yield* cookies.set(
-        COOKIE_NAMES.USER_SESSION,
-        sessionJWE,
-        config.session.maxAge,
-      );
+      yield* session.setUserSession(JWE);
 
       return ok({ redirectTo: options.redirectTo });
     });

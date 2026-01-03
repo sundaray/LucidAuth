@@ -1,108 +1,74 @@
-import { vi, type Mock } from 'vitest';
-import type { CredentialProviderConfig } from '../types';
+import { vi } from 'vitest';
+import type { CredentialProviderConfig } from '../types.js';
+import type { User } from '../../../core/session/types.js';
 
 // ============================================
-// MOCK CONFIG FACTORY
+// MOCK USER
 // ============================================
 
-export interface MockCredentialProviderConfig extends CredentialProviderConfig {
-  onSignUp: {
-    checkCredentialUserExists: Mock;
-    sendVerificationEmail: Mock;
-    createCredentialUser: Mock;
-    redirects: {
-      signUpSuccess: `/${string}`;
-      emailVerificationSuccess: `/${string}`;
-      emailVerificationError: `/${string}`;
-    };
-  };
-  onSignIn: {
-    getCredentialUser: Mock;
-  };
-  onPasswordReset: {
-    checkCredentialUserExists: Mock;
-    sendPasswordResetEmail: Mock;
-    updatePassword: Mock;
-    sendPasswordUpdateEmail: Mock;
-    redirects: {
-      forgotPasswordSuccess: `/${string}`;
-      tokenVerificationSuccess: `/${string}`;
-      tokenVerificationError: `/${string}`;
-      resetPasswordSuccess: `/${string}`;
-    };
+export function createMockUser(overrides: Partial<User> = {}): User {
+  return {
+    id: 'user-123',
+    email: 'test@example.com',
+    name: 'Test User',
+    ...overrides,
   };
 }
 
-export function createMockCredentialProviderConfig(): MockCredentialProviderConfig {
+// ============================================
+// MOCK CREDENTIAL PROVIDER CONFIG
+// ============================================
+
+export function createMockCredentialProviderConfig(
+  overrides: Partial<CredentialProviderConfig> = {},
+): CredentialProviderConfig {
   return {
     onSignUp: {
-      checkCredentialUserExists: vi.fn(),
-      sendVerificationEmail: vi.fn(),
-      createCredentialUser: vi.fn(),
+      checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: false }),
+      sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+      createCredentialUser: vi.fn().mockResolvedValue(undefined),
       redirects: {
-        signUpSuccess: '/check-email',
-        emailVerificationSuccess: '/sign-in',
-        emailVerificationError: '/sign-up/error',
+        signUpSuccess: '/auth/verify-email-sent',
+        emailVerificationSuccess: '/auth/signin',
+        emailVerificationError: '/auth/error',
       },
+      ...overrides.onSignUp,
     },
     onSignIn: {
-      getCredentialUser: vi.fn(),
+      getCredentialUser: vi.fn().mockResolvedValue({
+        ...createMockUser(),
+        hashedPassword: 'hashed-password-123',
+      }),
+      ...overrides.onSignIn,
     },
     onPasswordReset: {
-      checkCredentialUserExists: vi.fn(),
-      sendPasswordResetEmail: vi.fn(),
-      updatePassword: vi.fn(),
-      sendPasswordUpdateEmail: vi.fn(),
+      checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: true }),
+      sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+      updatePassword: vi.fn().mockResolvedValue(undefined),
+      sendPasswordUpdateEmail: vi.fn().mockResolvedValue(undefined),
       redirects: {
-        forgotPasswordSuccess: '/check-email',
-        tokenVerificationSuccess: '/reset-password',
-        tokenVerificationError: '/forgot-password/error',
-        resetPasswordSuccess: '/sign-in',
+        forgotPasswordSuccess: '/auth/forgot-password-success',
+        tokenVerificationSuccess: '/auth/reset-password',
+        tokenVerificationError: '/auth/error',
+        resetPasswordSuccess: '/auth/signin',
       },
+      ...overrides.onPasswordReset,
     },
+    ...overrides,
   };
 }
 
 // ============================================
-// COMMON TEST DATA
-// ============================================
-
-export const testSecret = 'test-secret-base64-encoded';
-export const testBaseUrl = 'https://myapp.com';
-
-export const testUserData = {
-  email: 'test@example.com',
-  password: 'securePassword123',
-};
-
-export const testUserDataWithAdditionalFields = {
-  email: 'test@example.com',
-  password: 'securePassword123',
-  name: 'Test User',
-  company: 'Acme Corp',
-};
-
-export const mockHashedPassword = 'hashed-password-value';
-
-export const mockUserSession = {
-  id: 'user-123',
-  email: 'test@example.com',
-  name: 'Test User',
-  hashedPassword: mockHashedPassword,
-};
-
-export const mockToken = 'mock-jwt-token-value';
-
-export const mockVerificationUrl =
-  'https://myapp.com/api/auth/verify-email?token=mock-jwt-token-value';
-
-export const mockPasswordResetUrl =
-  'https://myapp.com/api/auth/verify-password-reset-token?token=mock-jwt-token-value';
-
-// ============================================
-// HELPER TO CREATE MOCK REQUEST
+// MOCK REQUEST
 // ============================================
 
 export function createMockRequest(url: string): Request {
   return new Request(url);
 }
+
+// ============================================
+// TEST CONSTANTS
+// ============================================
+
+export const TEST_SECRET = 'test-secret-key-at-least-32-characters-long';
+export const TEST_BASE_URL = 'https://myapp.com';

@@ -1,148 +1,184 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { okAsync } from 'neverthrow';
-import { CredentialProvider } from '../provider';
-import {
-  createMockCredentialProviderConfig,
-  testSecret,
-  mockToken,
-  type MockCredentialProviderConfig,
-} from './setup';
-import { CallbackError } from '../../../core/errors';
-import type { PasswordHash } from '../../../core/password/types';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { okAsync, errAsync } from 'neverthrow';
+import { resetPassword } from '../reset-password.js';
+import { createMockCredentialProviderConfig, TEST_SECRET } from './setup.js';
+import { CallbackError, LucidAuthError } from '../../../core/errors.js';
 
-// ============================================
-// MOCK CORE MODULES
-// ============================================
+// Mock dependencies
+vi.mock('../../../core/password/index.js', () => ({
+  verifyPasswordResetToken: vi
+    .fn()
+    .mockReturnValue(okAsync({ email: 'test@example.com' })),
+}));
 
-vi.mock('../../../core/password', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/password')>();
-  return {
-    ...actual,
-    verifyPasswordResetToken: vi.fn(),
-  };
-});
+vi.mock('../../../core/password/hash.js', () => ({
+  hashPassword: vi.fn().mockReturnValue(okAsync('new-hashed-password')),
+}));
 
-vi.mock('../../../core/password/hash', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../core/password/hash')>();
-  return {
-    ...actual,
-    hashPassword: vi.fn(),
-  };
-});
+import { verifyPasswordResetToken } from '../../../core/password/index.js';
+import { hashPassword } from '../../../core/password/hash.js';
 
-import { verifyPasswordResetToken } from '../../../core/password';
-import { hashPassword } from '../../../core/password/hash';
-
-describe('CredentialProvider.resetPassword', () => {
-  let provider: CredentialProvider;
-  let mockConfig: MockCredentialProviderConfig;
-
-  const testEmail = 'test@example.com';
-  const newPassword = 'newSecurePassword123';
-  const newHashedPassword = 'new-hashed-password-value';
-
-  const mockTokenPayload = {
-    email: testEmail,
-  };
-
+describe('resetPassword', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockConfig = createMockCredentialProviderConfig();
-    provider = new CredentialProvider(mockConfig);
+    vi.clearAllMocks();
   });
 
-  test('should return redirectTo on successful password reset', async () => {
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-    vi.mocked(hashPassword).mockReturnValue(
-      okAsync(newHashedPassword as PasswordHash),
-    );
-    mockConfig.onPasswordReset.updatePassword.mockResolvedValue(undefined);
-    mockConfig.onPasswordReset.sendPasswordUpdateEmail.mockResolvedValue(
-      undefined,
-    );
+  it('returns success redirect URL on successful password reset', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleResetPassword = resetPassword(config);
 
-    const result = await provider.resetPassword(
-      mockToken,
-      { newPassword },
-      testSecret,
+    const result = await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
     );
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toEqual({
-      redirectTo: mockConfig.onPasswordReset.redirects.resetPasswordSuccess,
+      redirectTo: '/auth/signin',
     });
   });
 
-  test('should call updatePassword with correct email and hashed password', async () => {
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-    vi.mocked(hashPassword).mockReturnValue(
-      okAsync(newHashedPassword as PasswordHash),
-    );
-    mockConfig.onPasswordReset.updatePassword.mockResolvedValue(undefined);
-    mockConfig.onPasswordReset.sendPasswordUpdateEmail.mockResolvedValue(
-      undefined,
+  it('verifies password reset token', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleResetPassword = resetPassword(config);
+
+    await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
     );
 
-    await provider.resetPassword(mockToken, { newPassword }, testSecret);
+    expect(verifyPasswordResetToken).toHaveBeenCalledWith(
+      'valid-token',
+      TEST_SECRET,
+    );
+  });
 
-    expect(mockConfig.onPasswordReset.updatePassword).toHaveBeenCalledWith({
-      email: testEmail,
-      hashedPassword: newHashedPassword,
+  it('hashes the new password', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleResetPassword = resetPassword(config);
+
+    await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
+    );
+
+    expect(hashPassword).toHaveBeenCalledWith('newPassword123');
+  });
+
+  it('calls updatePassword with email and hashed password', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleResetPassword = resetPassword(config);
+
+    await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
+    );
+
+    expect(config.onPasswordReset.updatePassword).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      hashedPassword: 'new-hashed-password',
     });
   });
 
-  test('should return CallbackError when updatePassword throws', async () => {
-    vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-    vi.mocked(hashPassword).mockReturnValue(
-      okAsync(newHashedPassword as PasswordHash),
-    );
+  it('sends password update email', async () => {
+    const config = createMockCredentialProviderConfig();
+    const handleResetPassword = resetPassword(config);
 
-    const callbackError = new Error('Database update failed');
-    mockConfig.onPasswordReset.updatePassword.mockRejectedValue(callbackError);
-
-    const result = await provider.resetPassword(
-      mockToken,
-      { newPassword },
-      testSecret,
+    await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
     );
 
-    expect(result.isErr()).toBe(true);
-
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+    expect(config.onPasswordReset.sendPasswordUpdateEmail).toHaveBeenCalledWith(
+      {
+        email: 'test@example.com',
+      },
+    );
   });
 
-  test('should return CallbackError when sendPasswordUpdateEmail throws', async () => {
+  it('returns error when token verification fails', async () => {
+    class MockTokenError extends LucidAuthError {
+      constructor() {
+        super({ message: 'Token expired' });
+        this.name = 'MockTokenError';
+      }
+    }
+
     vi.mocked(verifyPasswordResetToken).mockReturnValue(
-      okAsync(mockTokenPayload),
-    );
-    vi.mocked(hashPassword).mockReturnValue(
-      okAsync(newHashedPassword as PasswordHash),
-    );
-    mockConfig.onPasswordReset.updatePassword.mockResolvedValue(undefined);
-
-    const callbackError = new Error('Email service failed');
-    mockConfig.onPasswordReset.sendPasswordUpdateEmail.mockRejectedValue(
-      callbackError,
+      errAsync(new MockTokenError()),
     );
 
-    const result = await provider.resetPassword(
-      mockToken,
-      { newPassword },
-      testSecret,
+    const config = createMockCredentialProviderConfig();
+    const handleResetPassword = resetPassword(config);
+
+    const result = await handleResetPassword(
+      'expired-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
     );
 
     expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(MockTokenError);
+  });
 
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(CallbackError);
+  it('returns CallbackError when updatePassword fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onPasswordReset: {
+        checkCredentialUserExists: vi.fn(),
+        sendPasswordResetEmail: vi.fn(),
+        updatePassword: vi.fn().mockRejectedValue(new Error('Database error')),
+        sendPasswordUpdateEmail: vi.fn(),
+        redirects: {
+          forgotPasswordSuccess: '/auth/forgot-password-success',
+          tokenVerificationSuccess: '/auth/reset-password',
+          tokenVerificationError: '/auth/error',
+          resetPasswordSuccess: '/auth/signin',
+        },
+      },
+    });
+    const handleResetPassword = resetPassword(config);
+
+    const result = await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
+  });
+
+  it('returns CallbackError when sendPasswordUpdateEmail fails', async () => {
+    const config = createMockCredentialProviderConfig({
+      onPasswordReset: {
+        checkCredentialUserExists: vi.fn(),
+        sendPasswordResetEmail: vi.fn(),
+        updatePassword: vi.fn().mockResolvedValue(undefined),
+        sendPasswordUpdateEmail: vi
+          .fn()
+          .mockRejectedValue(new Error('Email error')),
+        redirects: {
+          forgotPasswordSuccess: '/auth/forgot-password-success',
+          tokenVerificationSuccess: '/auth/reset-password',
+          tokenVerificationError: '/auth/error',
+          resetPasswordSuccess: '/auth/signin',
+        },
+      },
+    });
+    const handleResetPassword = resetPassword(config);
+
+    const result = await handleResetPassword(
+      'valid-token',
+      { newPassword: 'newPassword123' },
+      TEST_SECRET,
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toBeInstanceOf(CallbackError);
   });
 });

@@ -1,7 +1,7 @@
-import { ResultAsync, errAsync } from 'neverthrow';
+import { ResultAsync, safeTry, ok } from 'neverthrow';
 import type { AuthContext } from '../types.js';
 import type { LucidAuthError } from '../errors.js';
-import { ProviderNotFoundError } from '../oauth/errors.js';
+import { getCredentialProvider } from '../../providers/get-credential-provider.js';
 
 export function verifyEmail(ctx: AuthContext) {
   const { config, providers } = ctx;
@@ -9,12 +9,13 @@ export function verifyEmail(ctx: AuthContext) {
   return function (
     request: Request,
   ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
-    const provider = providers.get('credential');
-
-    if (!provider || provider.type !== 'credential') {
-      return errAsync(new ProviderNotFoundError({ providerId: 'credential' }));
-    }
-
-    return provider.verifyEmail(request, config.session.secret);
+    return safeTry(async function* () {
+      const provider = yield* getCredentialProvider(providers);
+      const result = yield* provider.verifyEmail(
+        request,
+        config.session.secret,
+      );
+      return ok(result);
+    });
   };
 }

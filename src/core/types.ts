@@ -7,6 +7,10 @@ export type {
 } from './session/types.js';
 export type { GoogleUserClaims } from '../providers/google/types.js';
 
+// ============================================
+// COOKIE OPERATIONS
+// ============================================
+
 export interface CookieOperations {
   get(name: string): ResultAsync<string | null, LucidAuthError>;
   set(
@@ -18,13 +22,26 @@ export interface CookieOperations {
 }
 
 // ============================================
+// SESSION OPERATIONS
+// ============================================
+
+export interface SessionOperations {
+  setUserSession(jwe: string): ResultAsync<void, LucidAuthError>;
+  getUserSession(): ResultAsync<string | null, LucidAuthError>;
+  deleteUserSession(): ResultAsync<void, LucidAuthError>;
+  setOAuthState(jwe: string): ResultAsync<void, LucidAuthError>;
+  getOAuthState(): ResultAsync<string | null, LucidAuthError>;
+  deleteOAuthState(): ResultAsync<void, LucidAuthError>;
+}
+
+// ============================================
 // AUTH CONTEXT
 // ============================================
 
 export interface AuthContext {
   config: AuthConfig;
   providers: Map<string, AnyAuthProvider>;
-  cookies: CookieOperations;
+  session: SessionOperations;
 }
 
 // ============================================
