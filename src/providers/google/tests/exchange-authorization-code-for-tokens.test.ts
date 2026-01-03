@@ -5,9 +5,9 @@ import {
   getGlobalDispatcher,
   type Dispatcher,
 } from 'undici';
-import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens';
-import type { ExchangeAuthorizationCodeForTokensParams } from './exchange-authorization-code-for-tokens';
-import type { GoogleTokenResponse } from './types';
+import { createMockTokenResponse } from './setup';
+import { exchangeAuthorizationCodeForTokens } from '../exchange-authorization-code-for-tokens';
+import type { ExchangeAuthorizationCodeForTokensParams } from '../exchange-authorization-code-for-tokens';
 
 // ============================================
 // MOCK FACTORIES
@@ -23,16 +23,6 @@ function createMockParams(
     redirectUri: 'https://myapp.com/api/auth/callback/google',
     codeVerifier: 'test-code-verifier',
     ...overrides,
-  };
-}
-
-function createMockTokenResponse(): GoogleTokenResponse {
-  return {
-    access_token: 'test-access-token',
-    expires_in: 3600,
-    id_token: 'test-id-token',
-    scope: 'openid email profile',
-    token_type: 'Bearer',
   };
 }
 

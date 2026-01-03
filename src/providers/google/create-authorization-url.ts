@@ -1,6 +1,5 @@
 import { Result } from 'neverthrow';
 import { LucidAuthError } from '../../core/errors.js';
-import { AUTH_ROUTES } from '../../core/constants.js';
 import { CreateAuthorizationUrlError } from '../../core/oauth/errors.js';
 
 import type { GoogleProviderConfig } from './types.js';
@@ -10,7 +9,7 @@ const GOOGLE_AUTHORIZATION_ENDPOINT =
 
 const REDIRECT_PATH = '/api/auth/callback/google';
 
-function createAuthorizationUrl(config: GoogleProviderConfig) {
+export function createAuthorizationUrl(config: GoogleProviderConfig) {
   return function (params: {
     state: string;
     codeChallenge: string;

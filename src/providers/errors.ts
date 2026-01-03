@@ -1,4 +1,4 @@
-import { LucidAuthError } from '../errors';
+import { LucidAuthError } from '../core/errors';
 
 export class ProviderNotFoundError extends LucidAuthError {
   constructor(options: { providerId: string; cause?: unknown }) {

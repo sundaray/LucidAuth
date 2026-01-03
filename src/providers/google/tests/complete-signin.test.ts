@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { completeSignin } from './complete-signin.js';
-import type { GoogleProviderConfig, GoogleUserClaims } from './types.js';
-import type { OAuthState } from '../../core/oauth/types.js';
+import { completeSignin } from '../complete-signin.js';
+import type { OAuthState } from '../../../core/oauth/types.js';
 import { ok, err, okAsync, errAsync } from 'neverthrow';
-import { TokenFetchError, DecodeGoogleIdTokenError } from './errors.js';
+import { TokenFetchError, DecodeGoogleIdTokenError } from '../errors.js';
+import {
+  createMockConfig,
+  createMockTokenResponse,
+  createMockUserClaims,
+} from './setup.js';
 
 vi.mock('./exchange-authorization-code-for-tokens.js', () => ({
   exchangeAuthorizationCodeForTokens: vi.fn(),
@@ -13,29 +17,8 @@ vi.mock('./decode-google-id-token.js', () => ({
   decodeGoogleIdToken: vi.fn(),
 }));
 
-import { exchangeAuthorizationCodeForTokens } from './exchange-authorization-code-for-tokens.js';
-import { decodeGoogleIdToken } from './decode-google-id-token.js';
-
-function createMockConfig(
-  overrides: Partial<GoogleProviderConfig> = {},
-): GoogleProviderConfig {
-  return {
-    clientId: 'test-client-id',
-    clientSecret: 'test-client-secret',
-    prompt: 'select_account',
-    onAuthentication: {
-      createGoogleUser: vi.fn().mockResolvedValue({
-        id: 'user-123',
-        email: 'test@example.com',
-        name: 'Test User',
-      }),
-      redirects: {
-        error: '/auth/error',
-      },
-    },
-    ...overrides,
-  };
-}
+import { exchangeAuthorizationCodeForTokens } from '../exchange-authorization-code-for-tokens.js';
+import { decodeGoogleIdToken } from '../decode-google-id-token.js';
 
 function createMockOAuthState(overrides: Partial<OAuthState> = {}): OAuthState {
   return {
@@ -43,20 +26,6 @@ function createMockOAuthState(overrides: Partial<OAuthState> = {}): OAuthState {
     codeVerifier: 'test-code-verifier',
     redirectTo: '/dashboard',
     provider: 'google',
-    ...overrides,
-  };
-}
-
-function createMockUserClaims(
-  overrides: Partial<GoogleUserClaims> = {},
-): GoogleUserClaims {
-  return {
-    aud: 'test-client-id',
-    iat: 1234567890,
-    exp: 1234567890 + 3600,
-    iss: 'https://accounts.google.com',
-    sub: '123456789',
-    email: 'user@example.com',
     ...overrides,
   };
 }
@@ -73,16 +42,6 @@ function createCallbackRequest(
   if (params.state) url.searchParams.set('state', params.state);
 
   return new Request(url.toString());
-}
-
-function createMockTokenResponse() {
-  return {
-    id_token: 'test-id-token',
-    access_token: 'test-access-token',
-    expires_in: 3600,
-    scope: 'openid email profile',
-    token_type: 'Bearer',
-  };
 }
 
 describe('completeSignin', () => {

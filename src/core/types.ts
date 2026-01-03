@@ -1,3 +1,4 @@
+import type { ResultAsync } from 'neverthrow';
 export type {
   BaseUser,
   User,
@@ -6,12 +7,35 @@ export type {
 } from './session/types.js';
 export type { GoogleUserClaims } from '../providers/google/types.js';
 
+export interface CookieOperations {
+  get(name: string): ResultAsync<string | null, LucidAuthError>;
+  set(
+    name: string,
+    value: string,
+    maxAge: number,
+  ): ResultAsync<void, LucidAuthError>;
+  delete(name: string): ResultAsync<void, LucidAuthError>;
+}
+
+// ============================================
+// AUTH CONTEXT
+// ============================================
+
+export interface AuthContext {
+  config: AuthConfig;
+  providers: Map<string, AnyAuthProvider>;
+  cookies: CookieOperations;
+}
+
 // ============================================
 // GOOGLE PROVIDER CALLBACK TYPES
 // ============================================
 
 import type { GoogleUserClaims } from '../providers/google/types.js';
+import type { AnyAuthProvider } from '../providers/types.js';
+import type { AuthConfig } from '../types/index.js';
 import type { User } from './session/types.js';
+import type { LucidAuthError } from './errors.js';
 
 export type CreateGoogleUserParams = GoogleUserClaims;
 export type CreateGoogleUserReturn = User;

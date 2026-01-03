@@ -10,14 +10,12 @@ export type AuthProviderId = 'google' | 'credential';
 export interface OAuthProvider {
   id: AuthProviderId;
   type: 'oauth';
-  createAuthorizationUrl(
-    config: GoogleProviderConfig,
-  ): (params: {
+  createAuthorizationUrl(params: {
     state: string;
     codeChallenge: string;
     prompt?: string;
     baseUrl: string;
-  }) => Result<string, LucidAuthError>;
+  }): Result<string, LucidAuthError>;
   completeSignin(
     request: Request,
     oauthStatePayload: OAuthState,

@@ -1,38 +1,8 @@
-import { Google } from './index.js';
-import type { GoogleProviderConfig } from './types.js';
+import { Google } from '../index.js';
 import { describe, it, expect, vi } from 'vitest';
-
-// ============================================
-// MOCK FACTORY
-// ============================================
-
-function createMockConfig(
-  overrides: Partial<GoogleProviderConfig> = {},
-): GoogleProviderConfig {
-  return {
-    clientId: 'test-client-id',
-    clientSecret: 'test-client-secret',
-    prompt: 'select_account',
-    onAuthentication: {
-      createGoogleUser: vi.fn().mockResolvedValue({
-        id: 'user-123',
-        email: 'test@example.com',
-        name: 'Test User',
-      }),
-      redirects: {
-        error: '/auth/error',
-      },
-    },
-    ...overrides,
-  };
-}
-
-// ============================================
-// TESTS
-// ============================================
+import { createMockConfig } from './setup.js';
 
 describe('Google provider', () => {
-  // ============ Provider Shape ============
   it('returns provider with correct id and type', () => {
     const provider = Google(createMockConfig());
 

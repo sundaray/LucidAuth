@@ -1,10 +1,10 @@
-import type { CredentialProviderConfig, CredentialProvider } from './types.js';
 import { signUp } from './sign-up.js';
 import { signIn } from './sign-in.js';
 import { verifyEmail } from './verify-email.js';
+import { resetPassword } from './reset-password.js';
 import { forgotPassword } from './forgot-password.js';
 import { verifyPasswordResetToken } from './verify-password-reset-token.js';
-import { resetPassword } from './reset-password.js';
+import type { CredentialProviderConfig, CredentialProvider } from './types.js';
 
 export function Credential(
   config: CredentialProviderConfig,
