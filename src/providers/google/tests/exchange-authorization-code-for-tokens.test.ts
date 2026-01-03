@@ -145,7 +145,7 @@ describe('exchangeAuthorizationCodeForTokens', () => {
      */
     it('returns ResponseTokenError when response status is 401', async () => {
       mockAgent
-        .get('htpps://oauth2.googleapis.com')
+        .get('https://oauth2.googleapis.com')
         .intercept({
           path: '/token',
           method: 'POST',
@@ -160,7 +160,7 @@ describe('exchangeAuthorizationCodeForTokens', () => {
       const result =
         await exchangeAuthorizationCodeForTokens(createMockParams());
 
-      expect(result.isOk()).toBe(true);
+      expect(result.isErr()).toBe(true);
       expect(result._unsafeUnwrapErr().name).toBe('TokenResponseError');
     });
 

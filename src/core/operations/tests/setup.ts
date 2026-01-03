@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { ok, err, okAsync, errAsync } from 'neverthrow';
+import { ok, okAsync } from 'neverthrow';
 import type { AuthContext, SessionOperations } from '../../types.js';
 import type { AuthConfig } from '../../../types/index.js';
 import type {
@@ -7,6 +7,7 @@ import type {
   CredentialProvider,
   AnyAuthProvider,
 } from '../../../providers/types.js';
+import type { CredentialProviderConfig } from '../../../providers/credential/types.js';
 import type { User } from '../../session/types.js';
 
 // ============================================
@@ -87,6 +88,50 @@ export function createMockOAuthProvider(
 }
 
 // ============================================
+// MOCK CREDENTIAL PROVIDER CONFIG
+// ============================================
+
+export function createMockCredentialProviderConfig(
+  overrides: Partial<CredentialProviderConfig> = {},
+): CredentialProviderConfig {
+  return {
+    onSignUp: {
+      checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: false }),
+      sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+      createCredentialUser: vi.fn().mockResolvedValue(undefined),
+      redirects: {
+        signUpSuccess: '/auth/verify-email',
+        emailVerificationSuccess: '/auth/signin',
+        emailVerificationError: '/auth/error',
+      },
+      ...overrides.onSignUp,
+    },
+    onSignIn: {
+      getCredentialUser: vi.fn().mockResolvedValue({
+        id: 'user-123',
+        email: 'test@example.com',
+        name: 'Test User',
+        hashedPassword: 'hashed-password-123',
+      }),
+      ...overrides.onSignIn,
+    },
+    onPasswordReset: {
+      checkCredentialUserExists: vi.fn().mockResolvedValue({ exists: true }),
+      sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+      updatePassword: vi.fn().mockResolvedValue(undefined),
+      sendPasswordUpdateEmail: vi.fn().mockResolvedValue(undefined),
+      redirects: {
+        forgotPasswordSuccess: '/auth/forgot-password-success',
+        tokenVerificationSuccess: '/auth/reset-password',
+        tokenVerificationError: '/auth/error',
+        resetPasswordSuccess: '/auth/signin',
+      },
+      ...overrides.onPasswordReset,
+    },
+  };
+}
+
+// ============================================
 // MOCK CREDENTIAL PROVIDER
 // ============================================
 
@@ -96,6 +141,7 @@ export function createMockCredentialProvider(
   return {
     id: 'credential',
     type: 'credential',
+    config: createMockCredentialProviderConfig(),
     signUp: vi
       .fn()
       .mockReturnValue(okAsync({ redirectTo: '/auth/verify-email' as const })),

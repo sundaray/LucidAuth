@@ -67,7 +67,7 @@ describe('createAuthHelpers', () => {
     const cookies = createMockCookies();
 
     const mockProvider = {
-      id: 'google',
+      id: 'google' as const,
       type: 'oauth' as const,
       createAuthorizationUrl: vi.fn(),
       completeSignin: vi.fn(),

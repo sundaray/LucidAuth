@@ -205,9 +205,10 @@ describe('handleOAuthCallback', () => {
     );
     const result = await handleCallback(request, 'google');
 
-    expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr()).toBeInstanceOf(
-      OAuthStateCookieNotFoundError,
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().redirectTo).toContain('/auth/error');
+    expect(result._unsafeUnwrap().redirectTo).toContain(
+      'o_auth_state_cookie_not_found_error',
     );
   });
 
@@ -239,6 +240,6 @@ describe('handleOAuthCallback', () => {
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap().redirectTo).toContain('/auth/error');
-    expect(result._unsafeUnwrap().redirectTo).toContain('MockOAuthError');
+    expect(result._unsafeUnwrap().redirectTo).toContain('mock_o_auth_error');
   });
 });

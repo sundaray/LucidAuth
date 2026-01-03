@@ -9,11 +9,10 @@ import {
   encryptUserSessionPayload,
   createUserSessionPayload,
 } from '../session/index.js';
-import { COOKIE_NAMES } from '../constants.js';
 import { appendErrorToPath } from '../utils/index.js';
 
 export function handleOAuthCallback(ctx: AuthContext) {
-  const { config, providers, cookies, session } = ctx;
+  const { config, providers, session } = ctx;
 
   return function (
     request: Request,

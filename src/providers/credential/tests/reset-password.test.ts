@@ -3,6 +3,7 @@ import { okAsync, errAsync } from 'neverthrow';
 import { resetPassword } from '../reset-password.js';
 import { createMockCredentialProviderConfig, TEST_SECRET } from './setup.js';
 import { CallbackError, LucidAuthError } from '../../../core/errors.js';
+import type { PasswordHash } from '../../../core/password/types.js';
 
 // Mock dependencies
 vi.mock('../../../core/password/index.js', () => ({
@@ -21,6 +22,12 @@ import { hashPassword } from '../../../core/password/hash.js';
 describe('resetPassword', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(verifyPasswordResetToken).mockReturnValue(
+      okAsync({ email: 'test@example.com' }),
+    );
+    vi.mocked(hashPassword).mockReturnValue(
+      okAsync('new-hashed-password' as PasswordHash),
+    );
   });
 
   it('returns success redirect URL on successful password reset', async () => {

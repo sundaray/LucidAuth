@@ -19,25 +19,21 @@ vi.mock('../../../core/utils', () => ({
         ),
       ),
     ),
-}));
-
-vi.mock('../../../core/utils/index.js', () => ({
   appendErrorToPath: vi
     .fn()
     .mockImplementation((path, errorName) => `${path}?error=${errorName}`),
 }));
 
-vi.mock('../../../core/password/index.js', () => ({
-  verifyPasswordResetToken: vi
-    .fn()
-    .mockReturnValue(okAsync({ email: 'test@example.com' })),
-  PasswordResetTokenNotFoundError: class extends Error {
-    name = 'PasswordResetTokenNotFoundError';
-  },
-}));
+vi.mock('../../../core/password/index.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../../core/password/index.js')>();
+  return {
+    ...actual,
+    verifyPasswordResetToken: vi.fn(),
+  };
+});
 
-import { parseUrl } from '../../../core/utils';
-import { appendErrorToPath } from '../../../core/utils/index.js';
+import { parseUrl, appendErrorToPath } from '../../../core/utils';
 import { verifyPasswordResetToken as verifyToken } from '../../../core/password/index.js';
 
 describe('verifyPasswordResetToken', () => {
@@ -49,6 +45,10 @@ describe('verifyPasswordResetToken', () => {
           'https://myapp.com/api/auth/verify-password-reset-token?token=valid-token',
         ),
       ),
+    );
+
+    vi.mocked(verifyToken).mockReturnValue(
+      okAsync({ email: 'test@example.com' }),
     );
   });
 

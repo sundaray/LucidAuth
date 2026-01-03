@@ -9,11 +9,11 @@ import {
   createMockUserClaims,
 } from './setup.js';
 
-vi.mock('./exchange-authorization-code-for-tokens.js', () => ({
+vi.mock('../exchange-authorization-code-for-tokens.js', () => ({
   exchangeAuthorizationCodeForTokens: vi.fn(),
 }));
 
-vi.mock('./decode-google-id-token.js', () => ({
+vi.mock('../decode-google-id-token.js', () => ({
   decodeGoogleIdToken: vi.fn(),
 }));
 
