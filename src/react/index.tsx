@@ -6,6 +6,7 @@ import type { UserSession } from '../core/session/types.js';
 import { MissingUserSessionProviderError } from './errors.js';
 
 type SessionContextState =
+  // loading should not have session and error because its loading
   | { status: 'loading'; session: null; error: null }
   | { status: 'success'; session: UserSession | null; error: null }
   | { status: 'error'; session: null; error: Error };

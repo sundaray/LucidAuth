@@ -38,6 +38,10 @@ export function createExtendUserSessionMiddleware(config: AuthConfig) {
 
     const exp = (userSession as unknown as { exp?: number }).exp;
 
+    if (!exp) {
+      return response;
+    }
+
     if (exp) {
       const now = Math.floor(Date.now() / 1000);
       const timeRemaining = exp - now;
