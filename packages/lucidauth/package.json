@@ -1,0 +1,84 @@
+{
+  "name": "lucidauth",
+  "version": "1.0.0-beta.4",
+  "description": "A simple authentication library for Next.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./next-js": {
+      "types": "./dist/next-js/index.d.ts",
+      "import": "./dist/next-js/index.js"
+    },
+    "./core/errors": {
+      "types": "./dist/core/errors.d.ts",
+      "import": "./dist/core/errors.js"
+    },
+    "./core/types": {
+      "types": "./dist/core/types.d.ts",
+      "import": "./dist/core/types.js"
+    },
+    "./providers/google": {
+      "types": "./dist/providers/google/index.d.ts",
+      "import": "./dist/providers/google/index.js"
+    },
+    "./providers/credential": {
+      "types": "./dist/providers/credential/index.d.ts",
+      "import": "./dist/providers/credential/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    }
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "vitest",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "check-format": "prettier --check .",
+    "ci": "pnpm run build && pnpm run check-format && pnpm run test",
+    "local-release": "changeset version && changeset publish",
+    "prepublishOnly": "pnpm run ci"
+  },
+  "keywords": [
+    "nextjs",
+    "authentication",
+    "oauth",
+    "google"
+  ],
+  "author": "Hemanta Sundaray hemantasundaray.com",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.0.14",
+    "jsdom": "^27.4.0",
+    "next": "^16.0.3",
+    "prettier": "^3.6.2",
+    "react": "^19.2.0",
+    "typescript": "^5.9.3",
+    "undici": "^7.16.0",
+    "vitest": "^4.0.2"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "jose": "^6.1.0",
+    "neverthrow": "^8.2.0"
+  },
+  "peerDependencies": {
+    "next": "^16.0.1",
+    "react": "^19.2.0"
+  }
+}
