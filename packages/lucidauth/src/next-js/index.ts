@@ -5,11 +5,13 @@ import { redirect as nextRedirect } from 'next/navigation';
 import type { ResultAsync } from 'neverthrow';
 import type { LucidAuthError } from '../core/errors.js';
 import type { UserSession } from '../core/session/types.js';
-import type {
-  CredentialSignInOptions,
-  CredentialSignInResult,
-} from './types.js';
 import { nextJsCookies } from './cookies.js';
+import type {
+  ProviderId,
+  ProviderSignInOptions,
+  ProviderSignInResult,
+} from './types.js';
+import { ensureLeadingSlash } from '../core/utils/index.js';
 
 async function unwrap<T>(
   resultAsync: ResultAsync<T, LucidAuthError>,
@@ -22,17 +24,10 @@ async function unwrap<T>(
 }
 
 interface AuthInstance {
-  signIn(
-    providerId: 'google',
-    options: { redirectTo: `/${string}` },
-  ): Promise<{
-    authorizationUrl: string;
-  }>;
-
-  signIn(
-    providerId: 'credential',
-    options: CredentialSignInOptions,
-  ): Promise<CredentialSignInResult>;
+  signIn<P extends ProviderId>(
+    providerId: P,
+    options: ProviderSignInOptions[P],
+  ): Promise<ProviderSignInResult[P]>;
   signUp: (data: {
     email: string;
     password: string;
@@ -73,7 +68,14 @@ export function createAuthInstance(config: AuthConfig): AuthInstance {
   // Build and return the auth instance
   return {
     signIn: (async (providerId, options) => {
-      const result = await unwrap(authHelpers.signIn(providerId, options));
+      const normalizedOptions = {
+        ...options,
+        redirectTo: ensureLeadingSlash(options.redirectTo),
+      };
+
+      const result = await unwrap(
+        authHelpers.signIn(providerId, normalizedOptions),
+      );
 
       // Google sign-in
       if ('authorizationUrl' in result) {

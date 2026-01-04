@@ -20,10 +20,10 @@ import {
 import { OAUTH_STATE_MAX_AGE } from '../constants.js';
 
 type SignInOptions =
-  | { redirectTo: `/${string}` }
-  | { email: string; password: string; redirectTo: `/${string}` };
+  | { redirectTo: string }
+  | { email: string; password: string; redirectTo: string };
 
-type SignInResult = { authorizationUrl: string } | { redirectTo: `/${string}` };
+type SignInResult = { authorizationUrl: string } | { redirectTo: string };
 
 export function signIn(ctx: AuthContext) {
   const { config, providers, session } = ctx;
@@ -62,7 +62,7 @@ export function signIn(ctx: AuthContext) {
 
   function handleOAuthSignIn(
     provider: OAuthProvider,
-    options: { redirectTo: `/${string}` },
+    options: { redirectTo: string },
   ): ResultAsync<{ authorizationUrl: string }, LucidAuthError> {
     return safeTry(async function* () {
       const state = yield* generateState();
@@ -94,8 +94,8 @@ export function signIn(ctx: AuthContext) {
 
   function handleCredentialSignIn(
     provider: CredentialProvider,
-    options: { email: string; password: string; redirectTo: `/${string}` },
-  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
+    options: { email: string; password: string; redirectTo: string },
+  ): ResultAsync<{ redirectTo: string }, LucidAuthError> {
     return safeTry(async function* () {
       const userWithPassword = yield* provider.signIn({
         email: options.email,

@@ -7,7 +7,7 @@ export type UserClaims = Record<string, any>;
 export interface OAuthState {
   state: string;
   codeVerifier: string;
-  redirectTo?: `/${string}`;
+  redirectTo?: string;
   provider: AuthProviderId;
 }
 

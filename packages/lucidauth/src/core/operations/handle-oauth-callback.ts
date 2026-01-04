@@ -17,7 +17,7 @@ export function handleOAuthCallback(ctx: AuthContext) {
   return function (
     request: Request,
     providerId: AuthProviderId,
-  ): ResultAsync<{ redirectTo: `/${string}` }, LucidAuthError> {
+  ): ResultAsync<{ redirectTo: string }, LucidAuthError> {
     const result = getOAuthProvider(providers, providerId);
 
     if (result.isErr()) {

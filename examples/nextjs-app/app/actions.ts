@@ -1,45 +1,45 @@
-"use server";
+'use server';
 
-import { signIn, signUp, signOut, forgotPassword, resetPassword } from "@/auth";
-import { LucidAuthError } from "lucidauth/core/errors";
+import { signIn, signUp, signOut, forgotPassword, resetPassword } from '@/auth';
+import { LucidAuthError } from 'lucidauth/core/errors';
 import {
   signInSchema,
   signUpSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
-} from "@/lib/schema";
-import { rethrowIfRedirect } from "@/lib/next-redirect";
+} from '@/lib/schema';
+import { rethrowIfRedirect } from '@/lib/next-redirect';
 
-  export async function signInWithGoogle() {
-    try {
-      await signIn("google", { redirectTo: "/dashboard" });
-    } catch (error) {
-      rethrowIfRedirect(error);
+export async function signInWithGoogle() {
+  try {
+    await signIn('google', { redirectTo: '/dashboard' });
+  } catch (error) {
+    rethrowIfRedirect(error);
 
-      console.log("signInWithGoogle error: ", error);
+    console.log('signInWithGoogle error: ', error);
 
-      if (error instanceof LucidAuthError) {
-        return { error: "Google sign-in failed. Please try again." };
-      }
-      return {
-        error: "Something went wrong. Please try again.",
-      };
+    if (error instanceof LucidAuthError) {
+      return { error: 'Google sign-in failed. Please try again.' };
     }
+    return {
+      error: 'Something went wrong. Please try again.',
+    };
   }
+}
 
 export async function signOutAction() {
-  await signOut({ redirectTo: "/" });
+  await signOut({ redirectTo: '/' });
 }
 
 export async function signInWithEmailAndPassword(next: string, data: unknown) {
   const parsed = signInSchema.safeParse(data);
 
   if (!parsed.success) {
-    return { error: "Invalid input data" };
+    return { error: 'Invalid input data' };
   }
 
   try {
-    await signIn("credential", {
+    await signIn('credential', {
       email: parsed.data.email,
       password: parsed.data.password,
       redirectTo: `/${next}`,
@@ -47,23 +47,23 @@ export async function signInWithEmailAndPassword(next: string, data: unknown) {
   } catch (error) {
     rethrowIfRedirect(error);
 
-    console.log("signInWithEmailAndPassword error: ", error);
+    console.log('signInWithEmailAndPassword error: ', error);
 
     if (error instanceof LucidAuthError) {
       switch (error.name) {
-        case "AccountNotFoundError":
-          return { error: "No account found with this email. Please sign up." };
+        case 'AccountNotFoundError':
+          return { error: 'No account found with this email. Please sign up.' };
 
-        case "InvalidCredentialsError":
-          return { error: "Invalid email or password." };
+        case 'InvalidCredentialsError':
+          return { error: 'Invalid email or password.' };
 
         default:
           return {
-            error: "Sign-in failed. Please try again.",
+            error: 'Sign-in failed. Please try again.',
           };
       }
     }
-    return { error: "Something went wrong. Please try again." };
+    return { error: 'Something went wrong. Please try again.' };
   }
 }
 
@@ -72,7 +72,7 @@ export async function signUpWithEmailAndPassword(data: unknown) {
   const parsed = signUpSchema.safeParse(data);
 
   if (!parsed.success) {
-    return { error: "Invalid input data" };
+    return { error: 'Invalid input data' };
   }
 
   try {
@@ -84,21 +84,21 @@ export async function signUpWithEmailAndPassword(data: unknown) {
   } catch (error) {
     rethrowIfRedirect(error);
 
-    console.log("signUpWithEmailAndPassword error: ", error);
+    console.log('signUpWithEmailAndPassword error: ', error);
 
     if (error instanceof LucidAuthError) {
       switch (error.name) {
-        case "AccountAlreadyExistsError":
+        case 'AccountAlreadyExistsError':
           return {
-            error: "An account with this email already exists. Please sign in.",
+            error: 'An account with this email already exists. Please sign in.',
           };
         default:
           return {
-            error: "Sign-up failed. Please try again.",
+            error: 'Sign-up failed. Please try again.',
           };
       }
     }
-    return { error: "Something went wrong. Please try again." };
+    return { error: 'Something went wrong. Please try again.' };
   }
 }
 
@@ -107,7 +107,7 @@ export async function forgotPasswordAction(email: string) {
   const parsed = forgotPasswordSchema.safeParse({ email });
 
   if (!parsed.success) {
-    return { error: "Invalid email address" };
+    return { error: 'Invalid email address' };
   }
 
   try {
@@ -115,15 +115,15 @@ export async function forgotPasswordAction(email: string) {
   } catch (error) {
     rethrowIfRedirect(error);
 
-    console.log("forgotPassword error: ", error);
+    console.log('forgotPassword error: ', error);
 
     if (error instanceof LucidAuthError) {
       return {
-        error: "Failed to process forgot password request. Please try again.",
+        error: 'Failed to process forgot password request. Please try again.',
       };
     }
 
-    return { error: "Something went wrong. Please try again." };
+    return { error: 'Something went wrong. Please try again.' };
   }
 }
 
@@ -135,7 +135,7 @@ export async function resetPasswordAction(token: string, newPassword: string) {
   });
 
   if (!parsed.success) {
-    return { error: "Invalid password" };
+    return { error: 'Invalid password' };
   }
 
   try {
@@ -143,28 +143,28 @@ export async function resetPasswordAction(token: string, newPassword: string) {
   } catch (error) {
     rethrowIfRedirect(error);
 
-    console.log("resetPassword error: ", error);
+    console.log('resetPassword error: ', error);
 
     if (error instanceof LucidAuthError) {
       switch (error.name) {
-        case "InvalidPasswordResetTokenError":
+        case 'InvalidPasswordResetTokenError':
           return {
             error:
-              "Invalid password reset token. Please request a new password reset link.",
+              'Invalid password reset token. Please request a new password reset link.',
           };
-        case "ExpiredPasswordResetTokenError":
+        case 'ExpiredPasswordResetTokenError':
           return {
             error:
-              "Password reset token has expired. Please request a new password reset link.",
+              'Password reset token has expired. Please request a new password reset link.',
           };
         default:
           return {
             error:
-              "Failed to process password reset request. Please try again.",
+              'Failed to process password reset request. Please try again.',
           };
       }
     }
 
-    return { error: "Something went wrong. Please try again." };
+    return { error: 'Something went wrong. Please try again.' };
   }
 }
