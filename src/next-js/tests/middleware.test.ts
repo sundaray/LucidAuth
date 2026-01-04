@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { okAsync, errAsync } from 'neverthrow';
 import { createExtendUserSessionMiddleware } from '../middleware.js';
 import {
@@ -35,15 +35,23 @@ import {
 describe('createExtendUserSessionMiddleware', () => {
   const mockResponseCookiesSet = vi.fn();
 
+  const FIXED_TIMESTAMP = new Date('2025-01-15T12:00:00Z');
+
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Reset NextResponse.next mock
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_TIMESTAMP);
+
     vi.mocked(NextResponse.next).mockReturnValue({
       cookies: {
         set: mockResponseCookiesSet,
       },
     } as any);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('passes through non-GET requests unchanged', async () => {
@@ -103,9 +111,8 @@ describe('createExtendUserSessionMiddleware', () => {
       },
     });
 
-    // Session expires in 6 days (well above the 3.5 day threshold)
-    const now = Math.floor(Date.now() / 1000);
-    const exp = now + 60 * 60 * 24 * 6; // 6 days from now
+    const nowInSeconds = Math.floor(FIXED_TIMESTAMP.getTime() / 1000);
+    const exp = nowInSeconds + 60 * 60 * 24 * 6; // 6 days from fixed time
 
     const mockSession = {
       ...createMockUserSession(),
@@ -136,9 +143,8 @@ describe('createExtendUserSessionMiddleware', () => {
       },
     });
 
-    // Session expires in 2 days (below the 3.5 day threshold)
-    const now = Math.floor(Date.now() / 1000);
-    const exp = now + 60 * 60 * 24 * 2; // 2 days from now
+    const nowInSeconds = Math.floor(FIXED_TIMESTAMP.getTime() / 1000);
+    const exp = nowInSeconds + 60 * 60 * 24 * 2; // 2 days from fixed time
 
     const mockSession = {
       ...createMockUserSession(),
@@ -181,6 +187,40 @@ describe('createExtendUserSessionMiddleware', () => {
     );
   });
 
+  it('does not refresh session when exactly at halfway point', async () => {
+    const maxAge = 60 * 60 * 24 * 7; // 7 days
+    const config = createMockConfig({
+      session: {
+        secret: 'test-secret',
+        maxAge,
+      },
+    });
+
+    const nowInSeconds = Math.floor(FIXED_TIMESTAMP.getTime() / 1000);
+    const refreshThreshold = maxAge / 2;
+    const exp = nowInSeconds + refreshThreshold + 1; // Just above threshold
+
+    const mockSession = {
+      ...createMockUserSession(),
+      exp,
+    };
+
+    vi.mocked(decryptUserSessionJWE).mockReturnValue(okAsync(mockSession));
+
+    const middleware = createExtendUserSessionMiddleware(config);
+
+    const request = createMockNextRequest('https://myapp.com/dashboard', {
+      method: 'GET',
+      cookies: { [COOKIE_NAMES.USER_SESSION]: 'valid-session-jwe' },
+    });
+
+    const response = await middleware(request as any);
+
+    expect(response).toBeDefined();
+    expect(encryptUserSessionPayload).not.toHaveBeenCalled();
+    expect(mockResponseCookiesSet).not.toHaveBeenCalled();
+  });
+
   it('handles encryption failure gracefully', async () => {
     const config = createMockConfig({
       session: {
@@ -189,9 +229,8 @@ describe('createExtendUserSessionMiddleware', () => {
       },
     });
 
-    // Session expires in 1 day (below threshold)
-    const now = Math.floor(Date.now() / 1000);
-    const exp = now + 60 * 60 * 24 * 1;
+    const nowInSeconds = Math.floor(FIXED_TIMESTAMP.getTime() / 1000);
+    const exp = nowInSeconds + 60 * 60 * 24 * 1; // 1 day from fixed time
 
     const mockSession = {
       ...createMockUserSession(),
@@ -210,7 +249,6 @@ describe('createExtendUserSessionMiddleware', () => {
       cookies: { [COOKIE_NAMES.USER_SESSION]: 'old-session-jwe' },
     });
 
-    // Should not throw, just return response without setting cookie
     const response = await middleware(request as any);
 
     expect(response).toBeDefined();
@@ -220,7 +258,6 @@ describe('createExtendUserSessionMiddleware', () => {
   it('does not refresh session when exp is not present', async () => {
     const config = createMockConfig();
 
-    // Session without exp field
     const mockSession = createMockUserSession();
 
     vi.mocked(decryptUserSessionJWE).mockReturnValue(okAsync(mockSession));

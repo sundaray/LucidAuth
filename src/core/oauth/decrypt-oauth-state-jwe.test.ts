@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { encryptOAuthStatePayload, decryptOAuthStateJWE } from './';
+import { encryptOAuthStatePayload, decryptOAuthStateJWE } from '.';
 import type { OAuthState } from './types';
 import { InvalidOAuthStateError, ExpiredOAuthStateError } from './errors';
 

@@ -9,7 +9,9 @@ export default defineConfig({
 
     // Meaning: "Only look for test files that match this pattern."
     // **/*.test.ts means "Any folder, any file ending in .test.ts"
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+
+    setupFiles: ['./vitest.setup.ts'],
 
     // 3. Coverage Configuration
     coverage: {
