@@ -1,5 +1,11 @@
 # lucidauth
 
+## 1.0.0
+
+### Minor Changes
+
+- "Improve signIn type safety with generics, accept string for redirectTo"
+
 ## 1.0.0-beta.4
 
 ### Patch Changes
